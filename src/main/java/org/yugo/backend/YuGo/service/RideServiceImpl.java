@@ -78,6 +78,9 @@ public class RideServiceImpl implements RideService {
         LocalDateTime now = LocalDateTime.now();
 
         VehicleTypePrice vehicleTypePrice = vehicleService.getVehicleTypeByName(rideIn.getVehicleType());
+        if(vehicleTypePrice == null){
+            throw new BadRequestException("Bad vehicle type");
+        }
         List<Passenger> passengers = new ArrayList<>();
         for(UserSimplifiedOut passenger : rideIn.getPassengers()){
             passengers.add((Passenger) userService.getUser(passenger.getId()));

@@ -6,10 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @NoArgsConstructor
@@ -89,7 +86,9 @@ public class Ride {
         this.vehicleTypePrice = other.vehicleTypePrice;
     }
 
-    public Ride(Integer id, LocalDateTime startTime, LocalDateTime endTime, double totalCost, Driver driver, List<Passenger> passengers, List<Path> locations, int estimatedTimeInMinutes, Set<RideReview> rideReviews, RideStatus status, Rejection rejection, Boolean isPanicPressed, Boolean babyTransport, Boolean petTransport, VehicleTypePrice vehicleTypePrice) {
+    public Ride(Integer id, LocalDateTime startTime, LocalDateTime endTime, double totalCost, Driver driver, List<Passenger> passengers,
+                List<Path> locations, int estimatedTimeInMinutes, Set<RideReview> rideReviews, RideStatus status, Rejection rejection,
+                Boolean isPanicPressed, Boolean babyTransport, Boolean petTransport, VehicleTypePrice vehicleTypePrice) {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;

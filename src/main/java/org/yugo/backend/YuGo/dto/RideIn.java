@@ -24,4 +24,13 @@ public class RideIn {
     private boolean petTransport;
     @Size(max = 50, message = "Field (dateTime) cannot be longer than 50 characters!")
     private String scheduledTime;
+
+    public RideIn(List<PathInOut> locations, List<UserSimplifiedOut> passengers, String vehicleType, boolean babyTransport, boolean petTransport, String scheduledTime) {
+        this.locations = locations;
+        this.passengers = passengers;
+        this.vehicleType = vehicleType;
+        this.babyTransport = babyTransport;
+        this.petTransport = petTransport;
+        this.scheduledTime = scheduledTime;
+    }
 }
