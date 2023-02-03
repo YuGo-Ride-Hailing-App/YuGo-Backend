@@ -266,5 +266,320 @@ public class RideServiceTest {
             Mockito.verify(webSocketService).notifyPassengerThatVehicleHasArrived(passenger.getId(), rideID);
         }
     }
+
+    @Test
+    @DisplayName("Should save ride")
+    public void shouldSaveRide() {
+        Ride unsavedRide = new Ride(null, null, null, 15, null, null, null, 10, null, RideStatus.PENDING, null, false, false, false, null);
+        Ride savedRide = new Ride(1, null, null, 15, null, null, null, 10, null, RideStatus.PENDING, null, false, false, false, null);
+
+        Mockito.when(rideRepository.save(unsavedRide)).thenReturn(savedRide);
+        Ride actualRide = rideService.save(unsavedRide);
+
+        Assertions.assertEquals(savedRide.getId(), actualRide.getId());
+        Mockito.verify(rideRepository, Mockito.times(1)).save(rideArgumentCaptor.capture());
+    }
+
+    @Test
+    @DisplayName("Should reject pending ride")
+    public void ShouldRejectPendingRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger firstPassenger = new Passenger();
+        firstPassenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(firstPassenger), null, 10, null, RideStatus.PENDING, null, false, false, false, null);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Authentication authentication = Mockito.mock(Authentication.class);
+        Mockito.when(authentication.getPrincipal()).thenReturn(driver);
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        Ride updatedRide = rideServiceSpy.rejectRide(1, "Reason");
+        Assertions.assertEquals(RideStatus.REJECTED, updatedRide.getStatus());
+        Assertions.assertNotNull(updatedRide.getRejection());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+    }
+
+    @Test
+    @DisplayName("Should throw not found for invalid ride ID for rejection")
+    public void ShouldThrowNotFoundForInvalidRideIdForRejection() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger firstPassenger = new Passenger();
+        firstPassenger.setId(2);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Mockito.doThrow(NotFoundException.class).when(rideServiceSpy).get(2);
+        Assertions.assertThrows(NotFoundException.class, () -> rideServiceSpy.rejectRide(2, "Reason"));
+    }
+
+    @Test
+    @DisplayName("Should reject scheduled ride")
+    public void ShouldRejectScheduledRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        passenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.SCHEDULED, null, false, false, false, null);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Authentication authentication = Mockito.mock(Authentication.class);
+        Mockito.when(authentication.getPrincipal()).thenReturn(driver);
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+
+        Ride updatedRide = rideServiceSpy.rejectRide(1, "Reason");
+        Assertions.assertEquals(RideStatus.REJECTED, updatedRide.getStatus());
+        Assertions.assertNotNull(updatedRide.getRejection());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+    }
+
+    @Test
+    @DisplayName("Should reject pending ride")
+    public void ShouldRejectPendingRideWithNullReason() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        passenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.PENDING, null, false, false, false, null);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Authentication authentication = Mockito.mock(Authentication.class);
+        Mockito.when(authentication.getPrincipal()).thenReturn(driver);
+        SecurityContext securityContext = Mockito.mock(SecurityContext.class);
+        Mockito.when(securityContext.getAuthentication()).thenReturn(authentication);
+        SecurityContextHolder.setContext(securityContext);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+
+        Ride updatedRide = rideServiceSpy.rejectRide(1, null);
+        Assertions.assertEquals(RideStatus.REJECTED, updatedRide.getStatus());
+        Assertions.assertNull(updatedRide.getRejection().getReason());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+    }
+
+    @Test
+    @DisplayName("Shouldn't reject ride with invalid status")
+    public void ShouldNotRejectRideWithInvalidStatus() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.CANCELED, null, false, false, false, null);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+
+        Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.rejectRide(1, "Reason"));
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+    }
+
+    @Test
+    @DisplayName("Should end ride")
+    public void ShouldEndRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        passenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.ACTIVE, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Ride updatedRide = rideServiceSpy.endRide(1);
+        Assertions.assertEquals(RideStatus.FINISHED, updatedRide.getStatus());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRideEnd(2, ride.getId());
+    }
+
+    @Test
+    @DisplayName("Should throw not found for invalid ride ID for ride end")
+    public void ShouldThrowNotFoundForInvalidRideIdForRideEnd() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger firstPassenger = new Passenger();
+        firstPassenger.setId(2);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Mockito.doThrow(NotFoundException.class).when(rideServiceSpy).get(2);
+        Assertions.assertThrows(NotFoundException.class, () -> rideServiceSpy.endRide(2));
+    }
+
+    @Test
+    @DisplayName("Shouldn't end ride with invalid status")
+    public void ShouldNotEndRideWithInvalidStatus() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.endRide(1));
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+    }
+
+    @Test
+    @DisplayName("Should accept pending ride")
+    public void ShouldAcceptPendingRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        passenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.PENDING, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Ride updatedRide = rideServiceSpy.acceptRide(1);
+        Assertions.assertEquals(RideStatus.ACCEPTED, updatedRide.getStatus());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+    }
+
+    @Test
+    @DisplayName("Should accept scheduled ride")
+    public void ShouldAcceptScheduledRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        passenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.SCHEDULED, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Ride updatedRide = rideServiceSpy.acceptRide(1);
+        Assertions.assertEquals(RideStatus.ACCEPTED, updatedRide.getStatus());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+    }
+
+    @Test
+    @DisplayName("Should throw not found for invalid ride ID for ride accept")
+    public void ShouldThrowNotFoundForInvalidRideIdForRideAccept() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger firstPassenger = new Passenger();
+        firstPassenger.setId(2);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Mockito.doThrow(NotFoundException.class).when(rideServiceSpy).get(2);
+        Assertions.assertThrows(NotFoundException.class, () -> rideServiceSpy.acceptRide(2));
+    }
+
+    @Test
+    @DisplayName("Shouldn't accept ride with invalid status")
+    public void ShouldNotAcceptRideWithInvalidStatus() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        passenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.acceptRide(1));
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+    }
+
+    @Test
+    @DisplayName("Should start accepted ride")
+    public void ShouldStartAcceptedRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        passenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.ACCEPTED, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Ride updatedRide = rideServiceSpy.startRide(1);
+        Assertions.assertEquals(RideStatus.ACTIVE, updatedRide.getStatus());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRideStart(2);
+    }
+
+    @Test
+    @DisplayName("Should throw not found for invalid ride ID for ride start")
+    public void ShouldThrowNotFoundForInvalidRideIdForRideStart() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger firstPassenger = new Passenger();
+        firstPassenger.setId(2);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Mockito.doThrow(NotFoundException.class).when(rideServiceSpy).get(2);
+        Assertions.assertThrows(NotFoundException.class, () -> rideServiceSpy.startRide(2));
+    }
+
+    @Test
+    @DisplayName("Shouldn't start ride with invalid status")
+    public void ShouldNotStartRideWithInvalidStatus() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.PENDING, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.startRide(1));
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+    }
+
+    @Test
+    @DisplayName("Should cancel active ride")
+    public void ShouldCancelActiveRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.ACTIVE, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Ride updatedRide = rideServiceSpy.cancelRide(1);
+        Assertions.assertEquals(RideStatus.CANCELED, updatedRide.getStatus());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+    }
+
+    @Test
+    @DisplayName("Should cancel pending ride")
+    public void ShouldCancelPendingRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.PENDING, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Ride updatedRide = rideServiceSpy.cancelRide(1);
+        Assertions.assertEquals(RideStatus.CANCELED, updatedRide.getStatus());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+    }
+
+    @Test
+    @DisplayName("Should cancel scheduled ride")
+    public void ShouldCancelScheduledRide() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.SCHEDULED, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Ride updatedRide = rideServiceSpy.cancelRide(1);
+        Assertions.assertEquals(RideStatus.CANCELED, updatedRide.getStatus());
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+    }
+
+    @Test
+    @DisplayName("Should throw not found for invalid ride ID for ride cancel")
+    public void ShouldThrowNotFoundForInvalidRideIdForRideCancel() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger firstPassenger = new Passenger();
+        firstPassenger.setId(2);
+        Driver driver = new Driver();
+        driver.setId(1);
+        Mockito.doThrow(NotFoundException.class).when(rideServiceSpy).get(2);
+        Assertions.assertThrows(NotFoundException.class, () -> rideServiceSpy.cancelRide(2));
+    }
+
+    @Test
+    @DisplayName("Shouldn't cancel ride with invalid status")
+    public void ShouldNotCancelRideWithInvalidStatus() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.cancelRide(1));
+        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+    }
+
+    @Test
+    @DisplayName("Should notify passengers that vehicle has arrived")
+    public void ShouldNotifyPassengersThatVehicleHasArrived() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        passenger.setId(2);
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
+        Mockito.doReturn(ride).when(rideServiceSpy).get(1);
+        rideServiceSpy.notifyPassengersThatVehicleHasArrived(1);
+        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerThatVehicleHasArrived(2, 1);
+    }
+
+    @Test
+    @DisplayName("Should throw not found for invalid ride ID instead of notifying passengers")
+    public void ShouldNotNotifyPassengersThatVehicleHasArrived() {
+        RideService rideServiceSpy = Mockito.spy(rideService);
+        Passenger passenger = new Passenger();
+        Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
+        Mockito.doThrow(NotFoundException.class).when(rideServiceSpy).get(2);
+        Assertions.assertThrows(NotFoundException.class, () -> rideServiceSpy.notifyPassengersThatVehicleHasArrived(2));
+    }
     
 }
