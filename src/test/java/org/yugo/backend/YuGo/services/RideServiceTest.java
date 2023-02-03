@@ -7,6 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -15,6 +18,7 @@ import org.yugo.backend.YuGo.dto.PathInOut;
 import org.yugo.backend.YuGo.dto.RideIn;
 import org.yugo.backend.YuGo.dto.RouteProperties;
 import org.yugo.backend.YuGo.exception.BadRequestException;
+import org.yugo.backend.YuGo.exception.NoContentException;
 import org.yugo.backend.YuGo.exception.NotFoundException;
 import org.yugo.backend.YuGo.model.*;
 import org.yugo.backend.YuGo.repository.RideRepository;
@@ -26,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 public class RideServiceTest {
@@ -277,7 +282,7 @@ public class RideServiceTest {
         Ride actualRide = rideService.save(unsavedRide);
 
         Assertions.assertEquals(savedRide.getId(), actualRide.getId());
-        Mockito.verify(rideRepository, Mockito.times(1)).save(rideArgumentCaptor.capture());
+        Mockito.verify(rideRepository, times(1)).save(rideArgumentCaptor.capture());
     }
 
     @Test
@@ -299,8 +304,8 @@ public class RideServiceTest {
         Ride updatedRide = rideServiceSpy.rejectRide(1, "Reason");
         Assertions.assertEquals(RideStatus.REJECTED, updatedRide.getStatus());
         Assertions.assertNotNull(updatedRide.getRejection());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
-        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
+        Mockito.verify(webSocketService, times(1)).notifyPassengerAboutRide(ride.getId(), 2);
     }
 
     @Test
@@ -334,8 +339,8 @@ public class RideServiceTest {
         Ride updatedRide = rideServiceSpy.rejectRide(1, "Reason");
         Assertions.assertEquals(RideStatus.REJECTED, updatedRide.getStatus());
         Assertions.assertNotNull(updatedRide.getRejection());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
-        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
+        Mockito.verify(webSocketService, times(1)).notifyPassengerAboutRide(ride.getId(), 2);
     }
 
     @Test
@@ -357,8 +362,8 @@ public class RideServiceTest {
         Ride updatedRide = rideServiceSpy.rejectRide(1, null);
         Assertions.assertEquals(RideStatus.REJECTED, updatedRide.getStatus());
         Assertions.assertNull(updatedRide.getRejection().getReason());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
-        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
+        Mockito.verify(webSocketService, times(1)).notifyPassengerAboutRide(ride.getId(), 2);
     }
 
     @Test
@@ -372,7 +377,7 @@ public class RideServiceTest {
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
 
         Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.rejectRide(1, "Reason"));
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
     }
 
     @Test
@@ -385,8 +390,8 @@ public class RideServiceTest {
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Ride updatedRide = rideServiceSpy.endRide(1);
         Assertions.assertEquals(RideStatus.FINISHED, updatedRide.getStatus());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
-        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRideEnd(2, ride.getId());
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
+        Mockito.verify(webSocketService, times(1)).notifyPassengerAboutRideEnd(2, ride.getId());
     }
 
     @Test
@@ -409,7 +414,7 @@ public class RideServiceTest {
         Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.endRide(1));
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
     }
 
     @Test
@@ -422,8 +427,8 @@ public class RideServiceTest {
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Ride updatedRide = rideServiceSpy.acceptRide(1);
         Assertions.assertEquals(RideStatus.ACCEPTED, updatedRide.getStatus());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
-        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
+        Mockito.verify(webSocketService, times(1)).notifyPassengerAboutRide(ride.getId(), 2);
     }
 
     @Test
@@ -436,8 +441,8 @@ public class RideServiceTest {
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Ride updatedRide = rideServiceSpy.acceptRide(1);
         Assertions.assertEquals(RideStatus.ACCEPTED, updatedRide.getStatus());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
-        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRide(ride.getId(), 2);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
+        Mockito.verify(webSocketService, times(1)).notifyPassengerAboutRide(ride.getId(), 2);
     }
 
     @Test
@@ -461,7 +466,7 @@ public class RideServiceTest {
         Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.acceptRide(1));
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
     }
 
     @Test
@@ -474,8 +479,8 @@ public class RideServiceTest {
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Ride updatedRide = rideServiceSpy.startRide(1);
         Assertions.assertEquals(RideStatus.ACTIVE, updatedRide.getStatus());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
-        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerAboutRideStart(2);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
+        Mockito.verify(webSocketService, times(1)).notifyPassengerAboutRideStart(2);
     }
 
     @Test
@@ -498,7 +503,7 @@ public class RideServiceTest {
         Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.PENDING, null, false, false, false, null);
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.startRide(1));
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
     }
 
     @Test
@@ -510,7 +515,7 @@ public class RideServiceTest {
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Ride updatedRide = rideServiceSpy.cancelRide(1);
         Assertions.assertEquals(RideStatus.CANCELED, updatedRide.getStatus());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
     }
 
     @Test
@@ -522,7 +527,7 @@ public class RideServiceTest {
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Ride updatedRide = rideServiceSpy.cancelRide(1);
         Assertions.assertEquals(RideStatus.CANCELED, updatedRide.getStatus());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
     }
 
     @Test
@@ -534,7 +539,7 @@ public class RideServiceTest {
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Ride updatedRide = rideServiceSpy.cancelRide(1);
         Assertions.assertEquals(RideStatus.CANCELED, updatedRide.getStatus());
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
     }
 
     @Test
@@ -557,7 +562,7 @@ public class RideServiceTest {
         Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         Assertions.assertThrows(BadRequestException.class, () -> rideServiceSpy.cancelRide(1));
-        Mockito.verify(rideServiceSpy, Mockito.times(1)).get(1);
+        Mockito.verify(rideServiceSpy, times(1)).get(1);
     }
 
     @Test
@@ -569,7 +574,7 @@ public class RideServiceTest {
         Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
         Mockito.doReturn(ride).when(rideServiceSpy).get(1);
         rideServiceSpy.notifyPassengersThatVehicleHasArrived(1);
-        Mockito.verify(webSocketService, Mockito.times(1)).notifyPassengerThatVehicleHasArrived(2, 1);
+        Mockito.verify(webSocketService, times(1)).notifyPassengerThatVehicleHasArrived(2, 1);
     }
 
     @Test
@@ -580,6 +585,542 @@ public class RideServiceTest {
         Ride ride = new Ride(1, null, null, 15, null, List.of(passenger), null, 10, null, RideStatus.FINISHED, null, false, false, false, null);
         Mockito.doThrow(NotFoundException.class).when(rideServiceSpy).get(2);
         Assertions.assertThrows(NotFoundException.class, () -> rideServiceSpy.notifyPassengersThatVehicleHasArrived(2));
+    }
+    @Test
+    @DisplayName("Should get ride negative id not exist")
+    public void shouldFindRideByIDNotFound(){
+        Mockito.when(rideRepository.findById(2)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.get(2);},"Ride does not exist!");
+        Mockito.verify(rideRepository, times(1)).findById(2);
+    }
+
+    @Test
+    @DisplayName("Should get ride negative id null")
+    public void shouldFindRideByIDNull(){
+        Mockito.when(rideRepository.findById(null)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.get(null);},"Ride does not exist!");
+        Mockito.verify(rideRepository, times(1)).findById(null);
+    }
+
+    @Test
+    @DisplayName("Should get all rides positive")
+    public void shouldGetAllRides(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+
+        Ride ride = new Ride(1,start,end,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        List<Ride> expectedRides=new ArrayList<>();
+        expectedRides.add(ride);
+        Mockito.when(rideRepository.findAll()).thenReturn(expectedRides);
+
+        List<Ride> actualRides= rideService.getAll();
+
+        Assertions.assertEquals(expectedRides.size(),actualRides.size());
+        Mockito.verify(rideRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Should get all rides positive empty")
+    public void shouldGetAllRidesEmpty(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+
+        Mockito.when(rideRepository.findAll()).thenReturn(new ArrayList<>());
+
+        List<Ride> actualRides= rideService.getAll();
+
+        Assertions.assertEquals(0,actualRides.size());
+        Mockito.verify(rideRepository, times(1)).findAll();
+    }
+
+    @Test
+    @DisplayName("Should get all rides by date positive")
+    public void shouldGetAllRidesByDate(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime start2= LocalDateTime.of(2023,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        LocalDateTime end2= LocalDateTime.of(2023,5,5,5,15);
+
+
+        Ride ride = new Ride(1,start,end,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Ride ride2 = new Ride(1,start2,end2,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        List<Ride> expectedRides=new ArrayList<>();
+        expectedRides.add(ride);
+        Mockito.when(rideRepository.findAllByDate(startCriteria,endCriteria)).thenReturn(expectedRides);
+
+        List<Ride> actualRides= rideService.getAllByDate(startCriteria,endCriteria);
+
+        Assertions.assertEquals(expectedRides.size(),actualRides.size());
+        Mockito.verify(rideRepository, times(1)).findAllByDate(startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by date positive empty")
+    public void shouldGetAllRidesByDateEmpty(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,5,5,15);
+
+        Mockito.when(rideRepository.findAllByDate(startCriteria,endCriteria)).thenReturn(new ArrayList<>());
+
+        List<Ride> actualRides= rideService.getAllByDate(startCriteria,endCriteria);
+
+        Assertions.assertEquals(0,actualRides.size());
+        Mockito.verify(rideRepository, times(1)).findAllByDate(startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get active ride by driver positive")
+    public void shouldFindDriverActiveRide(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        Driver driver=new Driver();
+        driver.setId(1);
+        Ride ride = new Ride(1,start,end,15,driver,null,null,10,null,RideStatus.ACTIVE,null,false,false,false,null);
+        Mockito.when(rideRepository.findActiveRideByDriver(1)).thenReturn(Optional.of(ride));
+        Ride actualRide= rideService.getActiveRideByDriver(1);
+
+        Assertions.assertEquals(actualRide.getId(),ride.getId());
+        Assertions.assertEquals(start,ride.getStartTime());
+        Assertions.assertEquals(end,ride.getEndTime());
+        Assertions.assertEquals(RideStatus.ACTIVE,ride.getStatus());
+        Assertions.assertEquals(driver.getId(),ride.getDriver().getId());
+        Mockito.verify(rideRepository, times(1)).findActiveRideByDriver(1);
+    }
+
+    @Test
+    @DisplayName("Should get active ride by non existing driver")
+    public void shouldntFindDriverNonExisting(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        Driver driver=new Driver();
+        driver.setId(1);
+        Ride ride = new Ride(1,start,end,15,driver,null,null,10,null,RideStatus.ACTIVE,null,false,false,false,null);
+
+        Assertions.assertThrows(NoContentException.class,()->{rideService.getActiveRideByDriver(2);});
+    }
+
+    @Test
+    @DisplayName("Shouldn't have active ride ")
+    public void shouldntFindDriverActiveRide(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        Driver driver=new Driver();
+        driver.setId(1);
+        Ride ride = new Ride(1,start,end,15,driver,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Mockito.when(rideRepository.findActiveRideByDriver(1)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(NoContentException.class,()->{rideService.getActiveRideByDriver(1);});
+        Mockito.verify(rideRepository, times(1)).findActiveRideByDriver(1);
+    }
+
+    @Test
+    @DisplayName("Should get active ride by passenger positive")
+    public void shouldFindPassengerActiveRide(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+        Ride ride = new Ride(1,start,end,15,null,passengers,null,10,null,RideStatus.ACTIVE,null,false,false,false,null);
+        Mockito.when(rideRepository.findActiveRideByPassenger(1)).thenReturn(Optional.of(ride));
+        Ride actualRide= rideService.getActiveRideByPassenger(passenger.getId());
+
+        Assertions.assertEquals(actualRide.getId(),ride.getId());
+        Assertions.assertEquals(start,ride.getStartTime());
+        Assertions.assertEquals(end,ride.getEndTime());
+        Assertions.assertEquals(RideStatus.ACTIVE,ride.getStatus());
+        Assertions.assertTrue(passengers.contains(passenger));
+        Mockito.verify(rideRepository, times(1)).findActiveRideByPassenger(1);
+    }
+
+    @Test
+    @DisplayName("Should get active ride by non existing driver")
+    public void shouldntFindPassengerNonExisting(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);;
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+        Ride ride = new Ride(1,start,end,15, null,passengers,null,10,null,RideStatus.ACTIVE,null,false,false,false,null);
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getActiveRideByPassenger(2);});
+    }
+
+    @Test
+    @DisplayName("Shouldn't have active ride ")
+    public void shouldntFindPassengerActiveRide(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+        Ride ride = new Ride(1,start,end,15,null,passengers,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Mockito.when(rideRepository.findActiveRideByPassenger(1)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getActiveRideByPassenger(1);});
+        Mockito.verify(rideRepository, times(1)).findActiveRideByPassenger(1);
+    }
+
+
+    @Test
+    @DisplayName("Should get all rides by passenger positive")
+    public void shouldGetAllRidesByPassenger(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime start2= LocalDateTime.of(2023,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        LocalDateTime end2= LocalDateTime.of(2023,5,5,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+
+        Ride ride = new Ride(1,start,end,15,null,passengers,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Ride ride2 = new Ride(1,start2,end2,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        List<Ride> expectedRides=new ArrayList<>();
+        expectedRides.add(ride);
+        Page<Ride> page= new PageImpl<>(expectedRides);
+
+        Mockito.when(rideRepository.findRidesByPassenger(1,startCriteria,endCriteria, PageRequest.of(0, 5))).thenReturn(page);
+
+        Page<Ride> actualRides= rideService.getPassengerRides(1,startCriteria,endCriteria,PageRequest.of(0, 5));
+        Assertions.assertEquals(page.getTotalElements(),actualRides.getTotalElements());
+        Assertions.assertEquals(page.getTotalPages(),actualRides.getTotalPages());
+        Mockito.verify(rideRepository, times(1)).findRidesByPassenger(1,startCriteria,endCriteria,PageRequest.of(0, 5));
+    }
+
+    @Test
+    @DisplayName("Should get all rides by passenger non exist")
+    public void shouldGetAllRidesByPassengerNonExisting(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,5,5,15);
+        Mockito.when(passengerService.get(2)).thenThrow(NotFoundException.class);
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getPassengerRides(2,startCriteria,endCriteria,PageRequest.of(0, 5));},"Passenger does not exist!");
+        Mockito.verify(rideRepository, times(0)).findRidesByPassenger(2,startCriteria,endCriteria,PageRequest.of(0, 5));
+    }
+
+    @Test
+    @DisplayName("Should get all rides by passenger without rides")
+    public void shouldGetAllRidesByPassengerEmptyRides(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+
+        List<Ride> expectedRides=new ArrayList<>();
+        Page<Ride> page= new PageImpl<>(expectedRides);
+
+        Mockito.when(rideRepository.findRidesByPassenger(1,startCriteria,endCriteria,PageRequest.of(0, 5))).thenReturn(page);
+        Page<Ride> actualRides= rideService.getPassengerRides(1,startCriteria,endCriteria,PageRequest.of(0, 5));
+        Assertions.assertEquals(page.getTotalElements(),actualRides.getTotalElements());
+        Assertions.assertEquals(page.getTotalPages(),actualRides.getTotalPages());
+        Mockito.verify(rideRepository, times(1)).findRidesByPassenger(1,startCriteria,endCriteria,PageRequest.of(0, 5));
+    }
+
+    @Test
+    @DisplayName("Should get all rides by passenger invalid Pageable object")
+    public void shouldGetAllRidesByPassengerInvalidPageable(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+
+        Assertions.assertThrows(IllegalArgumentException.class,()->{rideService.getPassengerRides(2,startCriteria,endCriteria,PageRequest.of(-1, 5));},"Passenger does not exist!");
+
+    }
+
+    @Test
+    @DisplayName("Should get all rides by passenger pageable positive")
+    public void shouldGetAllRidesByPassengerNonPageable(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime start2= LocalDateTime.of(2023,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        LocalDateTime end2= LocalDateTime.of(2023,5,5,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+
+        Ride ride = new Ride(1,start,end,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Ride ride2 = new Ride(1,start2,end2,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        List<Ride> expectedRides=new ArrayList<>();
+        expectedRides.add(ride);
+        Mockito.when(rideRepository.findRidesByPassenger(1,startCriteria,endCriteria)).thenReturn(expectedRides);
+
+        List<Ride> actualRides= rideService.getPassengerRidesNonPageable(1,startCriteria,endCriteria);
+
+        Assertions.assertEquals(expectedRides.size(),actualRides.size());
+        Mockito.verify(rideRepository, times(1)).findRidesByPassenger(1,startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by passenger non pagable non exist")
+    public void shouldGetAllRidesByPassengerNonExistingNonPagable(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,5,5,15);
+        Mockito.when(passengerService.get(2)).thenThrow(NotFoundException.class);
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getPassengerRidesNonPageable(2,startCriteria,endCriteria);},"Passenger does not exist!");
+        Mockito.verify(rideRepository, times(0)).findRidesByPassenger(2,startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by passenger non pageable without rides")
+    public void shouldGetAllRidesByPassengerNonPagableEmptyRides(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+
+        List<Ride> expectedRides=new ArrayList<>();
+
+        Mockito.when(rideRepository.findRidesByPassenger(1,startCriteria,endCriteria)).thenReturn(expectedRides);
+        List<Ride> actualRides= rideService.getPassengerRidesNonPageable(1,startCriteria,endCriteria);
+        Assertions.assertEquals(actualRides.size(),expectedRides.size());
+        Mockito.verify(rideRepository, times(1)).findRidesByPassenger(1,startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by user positive")
+    public void shouldGetAllRidesByUser(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime start2= LocalDateTime.of(2023,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        LocalDateTime end2= LocalDateTime.of(2023,5,5,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+
+        Ride ride = new Ride(1,start,end,15,null,passengers,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Ride ride2 = new Ride(1,start2,end2,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        List<Ride> expectedRides=new ArrayList<>();
+        expectedRides.add(ride);
+        Page<Ride> page= new PageImpl<>(expectedRides);
+
+        Mockito.when(rideRepository.findRidesByUser(1,startCriteria,endCriteria,PageRequest.of(0, 5))).thenReturn(page);
+
+        Page<Ride> actualRides= rideService.getUserRides(1,startCriteria,endCriteria,PageRequest.of(0, 5));
+        Assertions.assertEquals(page.getTotalElements(),actualRides.getTotalElements());
+        Assertions.assertEquals(page.getTotalPages(),actualRides.getTotalPages());
+        Mockito.verify(rideRepository, times(1)).findRidesByUser(1,startCriteria,endCriteria,PageRequest.of(0, 5));
+    }
+
+    @Test
+    @DisplayName("Should get all rides by user non exist")
+    public void shouldGetAllRidesByUserNonExisting(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,5,5,15);
+        Mockito.when(userService.getUser(2)).thenThrow(NotFoundException.class);
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getUserRides(2,startCriteria,endCriteria,PageRequest.of(0, 5));},"User does not exist!");
+        Mockito.verify(rideRepository, times(0)).findRidesByUser(2,startCriteria,endCriteria,PageRequest.of(0, 5));
+    }
+
+    @Test
+    @DisplayName("Should get all rides by user without rides")
+    public void shouldGetAllRidesByUserEmptyRides(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+
+        List<Ride> expectedRides=new ArrayList<>();
+        Page<Ride> page= new PageImpl<>(expectedRides);
+
+        Mockito.when(rideRepository.findRidesByUser(1,startCriteria,endCriteria,PageRequest.of(0, 5))).thenReturn(page);
+        Page<Ride> actualRides= rideService.getUserRides(1,startCriteria,endCriteria,PageRequest.of(0, 5));
+        Assertions.assertEquals(page.getTotalElements(),actualRides.getTotalElements());
+        Assertions.assertEquals(page.getTotalPages(),actualRides.getTotalPages());
+        Mockito.verify(rideRepository, times(1)).findRidesByUser(1,startCriteria,endCriteria,PageRequest.of(0, 5));
+    }
+
+    @Test
+    @DisplayName("Should get all rides by user invalid Pageable object")
+    public void shouldGetAllRidesByPassengerInvalidPageablee(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        Passenger passenger=new Passenger();
+        passenger.setId(1);
+        ArrayList<Passenger> passengers=new ArrayList();
+        passengers.add(passenger);
+
+        Assertions.assertThrows(IllegalArgumentException.class,()->{rideService.getUserRides(2,startCriteria,endCriteria,PageRequest.of(-1, 5));},"Passenger does not exist!");
+
+    }
+
+    @Test
+    @DisplayName("Should get ride positive")
+    public void shouldFindUnresolvedRideByID(){
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+
+        Ride ride = new Ride(1,start,end,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Mockito.when(rideRepository.findUnresolvedRideByPassenger(1)).thenReturn(Optional.of(ride));
+
+        Ride actualRide= rideService.getUnresolvedRide(1);
+
+        Assertions.assertEquals(actualRide.getId(),ride.getId());
+        Assertions.assertEquals(start,ride.getStartTime());
+        Assertions.assertEquals(end,ride.getEndTime());
+        Mockito.verify(rideRepository, times(1)).findUnresolvedRideByPassenger(1);
+    }
+
+    @Test
+    @DisplayName("Should get unresolved ride negative id not exist")
+    public void shouldFindUnresolvedRideByIDNotFound(){
+        Mockito.when(rideRepository.findUnresolvedRideByPassenger(2)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getUnresolvedRide(2);},"Ride does not exist!");
+        Mockito.verify(rideRepository, times(1)).findUnresolvedRideByPassenger(2);
+    }
+
+    @Test
+    @DisplayName("Should get unresolved ride negative id null")
+    public void shouldFindUnresolvedRideByIDNull(){
+        Mockito.when(rideRepository.findUnresolvedRideByPassenger(null)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getUnresolvedRide(null);},"Ride does not exist!");
+        Mockito.verify(rideRepository, times(1)).findUnresolvedRideByPassenger(null);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by driver positive")
+    public void shouldGetAllRidesByDriver(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime start2= LocalDateTime.of(2023,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        LocalDateTime end2= LocalDateTime.of(2023,5,5,5,15);
+        Driver driver=new Driver();
+        driver.setId(1);
+
+        Ride ride = new Ride(1,start,end,15,driver,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Ride ride2 = new Ride(1,start2,end2,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        List<Ride> expectedRides=new ArrayList<>();
+        expectedRides.add(ride);
+        Page<Ride> page= new PageImpl<>(expectedRides);
+
+        Mockito.when(rideRepository.findRidesByDriverAndStartTimeAndEndTimePageable(1,PageRequest.of(0, 5),startCriteria,endCriteria)).thenReturn(page);
+
+        Page<Ride> actualRides= rideService.getRidesByDriverPage(1,PageRequest.of(0, 5),startCriteria,endCriteria);
+        Assertions.assertEquals(page.getTotalElements(),actualRides.getTotalElements());
+        Assertions.assertEquals(page.getTotalPages(),actualRides.getTotalPages());
+        Mockito.verify(rideRepository, times(1)).findRidesByDriverAndStartTimeAndEndTimePageable(1,PageRequest.of(0, 5),startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by driver non exist")
+    public void shouldGetAllRidesByDriverNonExisting(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,5,5,15);
+        Mockito.when(driverService.getDriver(2)).thenThrow(NotFoundException.class);
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getRidesByDriverPage(2,PageRequest.of(0, 5),startCriteria,endCriteria);},"Passenger does not exist!");
+        Mockito.verify(rideRepository, times(0)).findRidesByDriverAndStartTimeAndEndTimePageable(2,PageRequest.of(0, 5),startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by driver without rides")
+    public void shouldGetAllRidesByDriverEmptyRides(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        Driver driver=new Driver();
+        driver.setId(1);
+
+        List<Ride> expectedRides=new ArrayList<>();
+        Page<Ride> page= new PageImpl<>(expectedRides);
+
+        Mockito.when(rideRepository.findRidesByDriverAndStartTimeAndEndTimePageable(1,PageRequest.of(0, 5),startCriteria,endCriteria)).thenReturn(page);
+        Page<Ride> actualRides= rideService.getRidesByDriverPage(1,PageRequest.of(0, 5),startCriteria,endCriteria);
+        Assertions.assertEquals(page.getTotalElements(),actualRides.getTotalElements());
+        Assertions.assertEquals(page.getTotalPages(),actualRides.getTotalPages());
+        Mockito.verify(rideRepository, times(1)).findRidesByDriverAndStartTimeAndEndTimePageable(1,PageRequest.of(0, 5),startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by driver invalid Pageable object")
+    public void shouldGetAllRidesByDriverInvalidPageable(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        Driver driver=new Driver();
+        driver.setId(1);
+
+        Assertions.assertThrows(IllegalArgumentException.class,()->{rideService.getRidesByDriverPage(2,PageRequest.of(-1, 5),startCriteria,endCriteria);},"Passenger does not exist!");
+
+    }
+
+    @Test
+    @DisplayName("Should get all rides by driver pageable positive")
+    public void shouldGetAllRidesByDriverNonPageable(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime start= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime start2= LocalDateTime.of(2023,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        LocalDateTime end= LocalDateTime.of(2022,5,5,5,15);
+        LocalDateTime end2= LocalDateTime.of(2023,5,5,5,15);
+        Driver driver=new Driver();
+        driver.setId(1);
+
+        Ride ride = new Ride(1,start,end,15,driver,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        Ride ride2 = new Ride(1,start2,end2,15,null,null,null,10,null,RideStatus.PENDING,null,false,false,false,null);
+        List<Ride> expectedRides=new ArrayList<>();
+        expectedRides.add(ride);
+        Mockito.when(rideRepository.findRidesByDriverAndStartTimeAndEndTimePageable(1,startCriteria,endCriteria)).thenReturn(expectedRides);
+
+        List<Ride> actualRides= rideService.getRidesByDriverNonPageable(1,startCriteria,endCriteria);
+
+        Assertions.assertEquals(expectedRides.size(),actualRides.size());
+        Mockito.verify(rideRepository, times(1)).findRidesByDriverAndStartTimeAndEndTimePageable(1,startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by driver non pagable non exist")
+    public void shouldGetAllRidesByDriverNonExistingNonPagable(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,5,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,5,5,15);
+        Mockito.when(driverService.getDriver(2)).thenThrow(NotFoundException.class);
+
+        Assertions.assertThrows(NotFoundException.class,()->{rideService.getRidesByDriverNonPageable(2,startCriteria,endCriteria);},"Passenger does not exist!");
+        Mockito.verify(rideRepository, times(0)).findRidesByDriverAndStartTimeAndEndTimePageable(2,startCriteria,endCriteria);
+    }
+
+    @Test
+    @DisplayName("Should get all rides by driver non pageable without rides")
+    public void shouldGetAllRidesByDriverNonPagableEmptyRides(){
+        LocalDateTime startCriteria= LocalDateTime.of(2022,5,4,5,5);
+        LocalDateTime endCriteria= LocalDateTime.of(2022,5,6,5,15);
+        Driver driver=new Driver();
+        driver.setId(1);
+
+        List<Ride> expectedRides=new ArrayList<>();
+
+        Mockito.when(rideRepository.findRidesByDriverAndStartTimeAndEndTimePageable(1,startCriteria,endCriteria)).thenReturn(expectedRides);
+        List<Ride> actualRides= rideService.getRidesByDriverNonPageable(1,startCriteria,endCriteria);
+        Assertions.assertEquals(actualRides.size(),expectedRides.size());
+        Mockito.verify(rideRepository, times(1)).findRidesByDriverAndStartTimeAndEndTimePageable(1,startCriteria,endCriteria);
     }
     
 }
