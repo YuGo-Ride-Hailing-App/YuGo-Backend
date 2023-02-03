@@ -319,7 +319,7 @@ public class RideServiceImpl implements RideService {
         return rideRepository.findRidesByPassenger(passengerId, from, to, page);
     }
     @Override
-    public List<Ride> getPassengerRidesNonPagable(Integer passengerId, LocalDateTime from, LocalDateTime to){
+    public List<Ride> getPassengerRidesNonPageable(Integer passengerId, LocalDateTime from, LocalDateTime to){
         passengerService.get(passengerId);
         return rideRepository.findRidesByPassenger(passengerId, from, to);
     }

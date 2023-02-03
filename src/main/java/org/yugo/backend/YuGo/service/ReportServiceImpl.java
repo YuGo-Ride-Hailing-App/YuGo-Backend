@@ -39,7 +39,7 @@ public class ReportServiceImpl implements ReportService{
     public ReportOut getNumberOfRidesByUser(Integer userId, LocalDateTime from, LocalDateTime to){
         List<Ride> rides;
         try{
-            rides=rideService.getPassengerRidesNonPagable(userId,from,to);
+            rides=rideService.getPassengerRidesNonPageable(userId,from,to);
         }catch (Exception e){
             rides=rideService.getRidesByDriverNonPageable(userId,from,to);
         }
@@ -94,7 +94,7 @@ public class ReportServiceImpl implements ReportService{
     public ReportOut getTotalCostOfRidesByUser(Integer userId, LocalDateTime from, LocalDateTime to){
         List<Ride> rides;
         try{
-            rides=rideService.getPassengerRidesNonPagable(userId,from,to);
+            rides=rideService.getPassengerRidesNonPageable(userId,from,to);
         }catch (Exception e){
             rides=rideService.getRidesByDriverNonPageable(userId,from,to);
         }
@@ -150,7 +150,7 @@ public class ReportServiceImpl implements ReportService{
     public ReportOut getDistanceByUser(Integer userId, LocalDateTime from, LocalDateTime to){
         List<Ride> rides;
         try{
-            rides=rideService.getPassengerRidesNonPagable(userId,from,to);
+            rides=rideService.getPassengerRidesNonPageable(userId,from,to);
         }catch (Exception e){
             rides=rideService.getRidesByDriverNonPageable(userId,from,to);
         }

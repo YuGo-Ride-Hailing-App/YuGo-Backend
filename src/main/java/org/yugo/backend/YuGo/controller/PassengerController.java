@@ -171,7 +171,7 @@ public class PassengerController {
         LocalDateTime fromTime=LocalDateTime.of(1753, Month.JANUARY,1,0, 0);
         LocalDateTime toTime=LocalDateTime.of(9998, Month.DECEMBER,31,0,0);
 
-        List<Ride> rides = rideService.getPassengerRidesNonPagable(id, fromTime, toTime);
+        List<Ride> rides = rideService.getPassengerRidesNonPageable(id, fromTime, toTime);
 
         return new ResponseEntity<>(new AllRidesOut(rides), HttpStatus.OK);
     }

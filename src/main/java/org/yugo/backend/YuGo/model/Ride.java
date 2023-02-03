@@ -88,4 +88,22 @@ public class Ride {
         this.petTransport = other.petTransport;
         this.vehicleTypePrice = other.vehicleTypePrice;
     }
+
+    public Ride(Integer id, LocalDateTime startTime, LocalDateTime endTime, double totalCost, Driver driver, List<Passenger> passengers, List<Path> locations, int estimatedTimeInMinutes, Set<RideReview> rideReviews, RideStatus status, Rejection rejection, Boolean isPanicPressed, Boolean babyTransport, Boolean petTransport, VehicleTypePrice vehicleTypePrice) {
+        this.id = id;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.totalCost = totalCost;
+        this.driver = driver;
+        this.passengers = passengers;
+        this.locations = locations;
+        this.estimatedTimeInMinutes = estimatedTimeInMinutes;
+        this.rideReviews = rideReviews;
+        this.status = status;
+        this.rejection = rejection;
+        this.isPanicPressed = isPanicPressed;
+        this.babyTransport = babyTransport;
+        this.petTransport = petTransport;
+        this.vehicleTypePrice = vehicleTypePrice;
+    }
 }
