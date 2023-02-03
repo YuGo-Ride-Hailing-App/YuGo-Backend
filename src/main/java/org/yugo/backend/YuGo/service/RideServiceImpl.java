@@ -303,7 +303,6 @@ public class RideServiceImpl implements RideService {
 
     @Override
     public Ride getActiveRideByDriver(Integer id){
-        driverService.getDriver(id);
         Optional<Ride> ride=  rideRepository.findActiveRideByDriver(id);
         if (ride.isEmpty())
             throw new NoContentException("Active ride does not exist");
@@ -312,10 +311,9 @@ public class RideServiceImpl implements RideService {
 
     @Override
     public Ride getActiveRideByPassenger(Integer id){
-        passengerService.get(id);
         Optional<Ride> ride=  rideRepository.findActiveRideByPassenger(id);
         if (ride.isEmpty())
-            throw new NoContentException("Active ride does not exist");
+            throw new NotFoundException("Active ride does not exist");
         return ride.get();
     }
     @Override
@@ -337,10 +335,12 @@ public class RideServiceImpl implements RideService {
     @Override
     public Ride getUnresolvedRide(Integer userID){
         Optional<Ride> ride = rideRepository.findUnresolvedRideByPassenger(userID);
-        if(ride.isEmpty()){
+        if(ride.isPresent()){
+            return ride.get();
+        }
+        else {
             throw new NotFoundException("There are not unresolved rides");
         }
-        return ride.get();
     }
 
     @Override
