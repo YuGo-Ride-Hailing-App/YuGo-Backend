@@ -2,7 +2,6 @@ package org.yugo.backend.YuGo.service;
 
 import org.yugo.backend.YuGo.dto.LiveMessageIn;
 import org.yugo.backend.YuGo.model.Message;
-import org.yugo.backend.YuGo.model.User;
 
 public interface WebSocketService {
     void notifyUserAboutLiveChatResponse(Integer senderId, LiveMessageIn liveMessageIn);
