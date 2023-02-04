@@ -326,7 +326,7 @@ public class DriverController {
                                                   @NotBlank(message = "Field (to) is required")
                                                   @RequestParam(name = "to") String to){
         PageRequest pageRequest;
-        pageRequest = PageRequest.of(page, size, Sort.by(Objects.requireNonNullElse(sort, "id")));
+        pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC,Objects.requireNonNullElse(sort, "id")));
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDateTime fromTime = LocalDate.parse(from, formatter).atTime(LocalTime.MIDNIGHT);
         LocalDateTime toTime = LocalDate.parse(to, formatter).atTime(LocalTime.MIDNIGHT);

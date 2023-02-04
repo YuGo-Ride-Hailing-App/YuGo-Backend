@@ -17,15 +17,19 @@ import java.util.Optional;
 
 public interface RideRepository extends JpaRepository<Ride,Integer> {
 
-    @Query(value = "SELECT r FROM Ride r WHERE r.driver.id=:driver_id AND r.startTime=(SELECT MIN(r2.startTime) FROM Ride r2 WHERE r2.startTime>CURRENT_TIMESTAMP AND r2.startTime='ACCEPTED')")
+    //@Query(value = "SELECT r FROM Ride r WHERE r.driver.id=:driver_id AND r.startTime=(SELECT MIN(r2.startTime) FROM Ride r2 WHERE r2.startTime>CURRENT_TIMESTAMP AND r2.startTime='ACCEPTED')")
+    @Query(value = "SELECT * FROM RIDES WHERE driver_id = :driver_id AND start_time = (SELECT MIN(start_time) FROM RIDES WHERE start_time > CURRENT_TIMESTAMP AND status = 'ACEPTED')",
+            nativeQuery = true)
     Optional<Ride> getNextRide(@Param("driver_id") Integer driverID);
-    @Query(value = "SELECT r FROM Ride r WHERE r.driver.id = :driver_id and r.status='ACTIVE'")
+    @Query(value = "SELECT * FROM RIDES r WHERE r.driver_id = :driver_id and r.status='ACTIVE'",
+            nativeQuery = true)
     Optional<Ride> findActiveRideByDriver(@Param("driver_id") Integer driverID);
 
-    @Query(value = "SELECT DISTINCT r FROM Ride r LEFT JOIN  r.passengers p WHERE p.id=:passenger_id AND r.status='ACTIVE'")
+    @Query(value = "SELECT * FROM RIDES r WHERE r.status='ACTIVE' and r.id in (SELECT ur.ride_id from PASSENGER_RIDES ur WHERE r.id=ur.ride_id and :passenger_id=ur.passenger_id)",
+            nativeQuery = true)
     Optional<Ride> findActiveRideByPassenger(@Param("passenger_id") Integer passengerID);
 
-    @Query (value ="SELECT DISTINCT r FROM Ride r LEFT JOIN r.passengers p WHERE p.id=:passenger_id AND (r.status='PENDING' OR r.status='SCHEDULED')")
+    @Query(value = "SELECT * FROM rides WHERE :passenger_id in (SELECT passenger_id FROM PASSENGER_RIDES where  id=ride_id) AND  status IN ('PENDING', 'SCHEDULED')", nativeQuery = true)
     Optional<Ride> findUnresolvedRideByPassenger(@Param("passenger_id") Integer passengerID);
 
     @Query(value = "SELECT DISTINCT r FROM Ride r LEFT JOIN r.passengers p WHERE :passengerId = p.id AND r.startTime>=:fromTime AND :toTime>=r.startTime")
@@ -56,7 +60,7 @@ public interface RideRepository extends JpaRepository<Ride,Integer> {
     @Query(value = "SELECT r FROM Ride r WHERE r.driver.id = :driver_id AND r.status='ACCEPTED'")
     Optional<Ride> findAcceptedRideByDriver(@Param("driver_id") Integer driverID);
 
-    @Query(value = "SELECT DISTINCT r FROM Ride  r LEFT JOIN r.driver d WHERE ( d.vehicle.id=:vehicleID) AND r.status='ACTIVE'")
+    @Query(value = "SELECT * FROM rides WHERE status='ACTIVE' AND driver_id IN (SELECT id FROM users WHERE vehicle_id = :vehicleID)", nativeQuery = true)
     Optional<Ride> getStartedRideByVehicle(Integer vehicleID);
 
 }
