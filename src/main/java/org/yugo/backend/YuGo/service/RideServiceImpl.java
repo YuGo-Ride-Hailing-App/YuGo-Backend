@@ -141,9 +141,9 @@ public class RideServiceImpl implements RideService {
         if(availableDrivers.isEmpty()){
             for(Passenger passenger : ride.getPassengers()){
                 webSocketService.notifyPassengerAboutRide(-1, passenger.getId());
-                rideRepository.delete(ride);
-                return;
             }
+            rideRepository.delete(ride);
+            return;
         }
         DriverAvailability driverAvailability = findDriver(availableDrivers, ride.getStartTime(), ride.getEstimatedTimeInMinutes(), rideDeparture, rideDestination);
         if(driverAvailability != null){

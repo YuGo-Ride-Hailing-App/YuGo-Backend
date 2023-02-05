@@ -1,5 +1,6 @@
 package org.yugo.backend.YuGo.services;
 
+import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -272,6 +273,199 @@ public class RideServiceTest {
         }
     }
 
+    @Test
+    public void driverSearchWithNoAvailableDriversNotifiesPassengers(){
+        Integer rideID = 1;
+        Ride ride = new Ride();
+        ride.setPetTransport(true);
+        ride.setBabyTransport(true);
+        ride.setId(rideID);
+        List<Path> paths = new ArrayList<>();
+        Path path = new Path();
+        path.setDeparture(new Location());
+        path.setDestination(new Location());
+        paths.add(path);
+        ride.setLocations(paths);
+        ride.setVehicleTypePrice(new VehicleTypePrice());
+        Passenger p1 = new Passenger();
+        p1.setId(1);
+        Passenger p2 = new Passenger();
+        p2.setId(2);
+        List<Passenger> passengers = List.of(p1, p2);
+        ride.setPassengers(passengers);
+
+        Mockito.when(driverService.getDriversInRange(anyDouble(), anyDouble(), anyDouble())).thenReturn(new ArrayList<>());
+        Mockito.when(rideRepository.getReferenceById(rideID)).thenReturn(ride);
+
+        rideService.searchForDriver(rideID);
+
+        for(Passenger passenger : passengers){
+            Mockito.verify(webSocketService).notifyPassengerAboutRide(-1, passenger.getId());
+        }
+        Mockito.verify(rideRepository).delete(ride);
+
+    }
+    @Test
+    public void driverSearchWithAvailableDrivers(){
+        VehicleTypePrice vehicleTypePrice = new VehicleTypePrice();
+        vehicleTypePrice.setVehicleType(VehicleType.STANDARD);
+
+
+        Vehicle vehicle1 = new Vehicle();
+        vehicle1.setVehicleType(VehicleType.STANDARD);
+        vehicle1.setAreBabiesAllowed(true);
+        vehicle1.setArePetsAllowed(true);
+        vehicle1.setNumberOfSeats(4);
+        Location vehicleLocation = new Location();
+        vehicleLocation.setLatitude(44);
+        vehicleLocation.setLongitude(44);
+        vehicle1.setCurrentLocation(vehicleLocation);
+
+        List<Driver> drivers = new ArrayList<>();
+        Integer driver1ID = 1;
+        Driver driver1 = new Driver();
+        driver1.setId(driver1ID);
+        driver1.setVehicle(vehicle1);
+        driver1.setOnline(true);
+        drivers.add(driver1);
+
+        Mockito.when(workTimeRepository.getTotalWorkTimeInLast24Hours(driver1ID)).thenReturn(0.0);
+        Mockito.when(driverService.getDriversInRange(anyDouble(), anyDouble(), anyDouble())).thenReturn(drivers);
+        Mockito.when(rideRepository.findAcceptedRideByDriver(driver1ID)).thenReturn(Optional.empty());
+        Mockito.when(rideRepository.findActiveRideByDriver(driver1ID)).thenReturn(Optional.empty());
+        Mockito.when(rideRepository.getNextRide(driver1ID)).thenReturn(Optional.empty());
+
+        Integer rideID = 10;
+        Ride ride = new Ride();
+        ride.setVehicleTypePrice(vehicleTypePrice);
+        ride.setPetTransport(true);
+        ride.setBabyTransport(true);
+        ride.setId(rideID);
+        ride.setStartTime(LocalDateTime.now());
+        List<Path> paths = new ArrayList<>();
+        Path path = new Path();
+        Location departure = new Location();
+        departure.setLatitude(46);
+        departure.setLongitude(46);
+        path.setDeparture(departure);
+        Location destination = new Location();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        path.setDestination(destination);
+        paths.add(path);
+        ride.setLocations(paths);
+        Passenger p1 = new Passenger();
+        p1.setId(1);
+        Passenger p2 = new Passenger();
+        p2.setId(2);
+        List<Passenger> passengers = List.of(p1, p2);
+        ride.setPassengers(passengers);
+        Mockito.when(rideRepository.save(any(Ride.class))).thenAnswer(obj -> obj.getArguments()[0]);
+        Mockito.when(rideRepository.getReferenceById(rideID)).thenReturn(ride);
+
+
+        RouteProperties routeProperties = new RouteProperties();
+        routeProperties.setDuration(600);
+        Mockito.when(routingService.getRouteProperties(anyDouble(), anyDouble(), anyDouble(), anyDouble())).thenReturn(routeProperties);
+
+        rideService.searchForDriver(rideID);
+
+        ArgumentCaptor<Ride> argumentCaptor = ArgumentCaptor.forClass(Ride.class);
+        Mockito.verify(rideRepository).save(argumentCaptor.capture());
+        Assertions.assertEquals(driver1ID, argumentCaptor.getValue().getDriver().getId());
+        Mockito.verify(webSocketService).sendRideRequestToDriver(driver1ID,ride.getId());
+    }
+
+    @Test
+    public void driverSearchWithAvailableDriversPickDriverWithEarliestAvailableTime(){
+        VehicleTypePrice vehicleTypePrice = new VehicleTypePrice();
+        vehicleTypePrice.setVehicleType(VehicleType.STANDARD);
+
+        Location vehicleLocation1 = new Location();
+        vehicleLocation1.setLatitude(50);
+        vehicleLocation1.setLongitude(50);
+        Location vehicleLocation2 = new Location();
+        vehicleLocation2.setLatitude(40);
+        vehicleLocation2.setLongitude(40);
+
+        Vehicle vehicle1 = new Vehicle();
+        vehicle1.setVehicleType(VehicleType.STANDARD);
+        vehicle1.setAreBabiesAllowed(true);
+        vehicle1.setArePetsAllowed(true);
+        vehicle1.setNumberOfSeats(4);
+        vehicle1.setCurrentLocation(vehicleLocation1);
+
+        Vehicle vehicle2 = new Vehicle();
+        vehicle2.setVehicleType(VehicleType.STANDARD);
+        vehicle2.setAreBabiesAllowed(true);
+        vehicle2.setArePetsAllowed(true);
+        vehicle2.setNumberOfSeats(4);
+        vehicle2.setCurrentLocation(vehicleLocation2);
+
+        List<Driver> drivers = new ArrayList<>();
+        Integer driver1ID = 1;
+        Driver driver1 = new Driver();
+        driver1.setId(driver1ID);
+        driver1.setVehicle(vehicle1);
+        driver1.setOnline(true);
+        drivers.add(driver1);
+        Integer driver2ID = 2;
+        Driver driver2 = new Driver();
+        driver2.setId(driver2ID);
+        driver2.setVehicle(vehicle2);
+        driver2.setOnline(true);
+        drivers.add(driver2);
+
+        Mockito.when(workTimeRepository.getTotalWorkTimeInLast24Hours(anyInt())).thenReturn(0.0);
+        Mockito.when(driverService.getDriversInRange(anyDouble(), anyDouble(), anyDouble())).thenReturn(drivers);
+        Mockito.when(rideRepository.findAcceptedRideByDriver(driver1ID)).thenReturn(Optional.empty());
+        Mockito.when(rideRepository.findActiveRideByDriver(driver1ID)).thenReturn(Optional.empty());
+        Mockito.when(rideRepository.getNextRide(driver1ID)).thenReturn(Optional.empty());
+
+        Integer rideID = 1;
+        Ride ride = new Ride();
+        ride.setVehicleTypePrice(vehicleTypePrice);
+        ride.setPetTransport(true);
+        ride.setBabyTransport(true);
+        ride.setId(rideID);
+        ride.setStartTime(LocalDateTime.now());
+        List<Path> paths = new ArrayList<>();
+        Path path = new Path();
+        Location departure = new Location();
+        departure.setLatitude(46);
+        departure.setLongitude(46);
+        path.setDeparture(departure);
+        Location destination = new Location();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        path.setDestination(destination);
+        paths.add(path);
+        ride.setLocations(paths);
+        Passenger p1 = new Passenger();
+        p1.setId(1);
+        Passenger p2 = new Passenger();
+        p2.setId(2);
+        List<Passenger> passengers = List.of(p1, p2);
+        ride.setPassengers(passengers);
+        Mockito.when(rideRepository.save(any(Ride.class))).thenAnswer(obj -> obj.getArguments()[0]);
+        Mockito.when(rideRepository.getReferenceById(rideID)).thenReturn(ride);
+
+
+        RouteProperties routeProperties1 = new RouteProperties();
+        routeProperties1.setDuration(1600);
+        RouteProperties routeProperties2 = new RouteProperties();
+        routeProperties2.setDuration(600);
+        Mockito.when(routingService.getRouteProperties(vehicleLocation1.getLatitude(), vehicleLocation1.getLongitude(), departure.getLatitude(), departure.getLongitude())).thenReturn(routeProperties1);
+        Mockito.when(routingService.getRouteProperties(vehicleLocation2.getLatitude(), vehicleLocation2.getLongitude(), departure.getLatitude(), departure.getLongitude())).thenReturn(routeProperties2);
+
+        rideService.searchForDriver(rideID);
+
+
+        ArgumentCaptor<Ride> argumentCaptor = ArgumentCaptor.forClass(Ride.class);
+        Mockito.verify(rideRepository).save(argumentCaptor.capture());
+        Assertions.assertEquals(driver2ID, argumentCaptor.getValue().getDriver().getId());
+        Mockito.verify(webSocketService).sendRideRequestToDriver(driver2ID,ride.getId());
+    }
     @Test
     @DisplayName("Should save ride")
     public void shouldSaveRide() {
