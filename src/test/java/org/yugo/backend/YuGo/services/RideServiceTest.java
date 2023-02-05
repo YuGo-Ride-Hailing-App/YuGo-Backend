@@ -36,10 +36,8 @@ import static org.mockito.Mockito.times;
 public class RideServiceTest {
     @Mock
     private RideRepository rideRepository;
-
     @Mock
     private WorkTimeRepository workTimeRepository;
-
     @Mock
     private RoutingService routingService;
     @Mock
@@ -52,12 +50,8 @@ public class RideServiceTest {
     private VehicleService vehicleService;
     @Mock
     private WebSocketService webSocketService;
-
     @Captor
     private ArgumentCaptor<Ride> rideArgumentCaptor;
-
-    //@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    @Autowired
     @InjectMocks
     private RideServiceImpl rideService;
     @Test

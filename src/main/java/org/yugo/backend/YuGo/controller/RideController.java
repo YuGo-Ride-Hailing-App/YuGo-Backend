@@ -36,20 +36,17 @@ public class RideController {
     private final RideService rideService;
     private final PanicService panicService;
     private final PassengerService passengerService;
-    private final DriverService driverService;
     private final VehicleService vehicleService;
     private final FavoritePathService favoritePathService;
-    private final RoutingService routingService;
 
     @Autowired
-    public RideController(RideService rideService, PanicService panicService, PassengerService passengerService, DriverService driverService, VehicleService vehicleService, FavoritePathService favoritePathService, RoutingService routingService){
+    public RideController(RideService rideService, PanicService panicService, PassengerService passengerService,
+                          VehicleService vehicleService, FavoritePathService favoritePathService){
         this.rideService=rideService;
         this.panicService=panicService;
         this.passengerService=passengerService;
-        this.driverService=driverService;
         this.vehicleService=vehicleService;
         this.favoritePathService=favoritePathService;
-        this.routingService = routingService;
     }
 
     @PostMapping(
