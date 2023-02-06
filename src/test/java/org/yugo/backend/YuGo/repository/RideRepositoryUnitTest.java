@@ -3,6 +3,8 @@ package org.yugo.backend.YuGo.repository;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.yugo.backend.YuGo.model.Ride;
@@ -11,6 +13,7 @@ import org.yugo.backend.YuGo.model.RideStatus;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -240,6 +243,188 @@ public class RideRepositoryUnitTest {
         Assertions.assertEquals(0,test.size());
     }
 
+    private final Integer passenger01ID = 3;
+    private final Integer driver01ID = 9;
+    @Test
+    @DisplayName("Get ride pages for passenger returns all passenger rides")
+    @Order(200)
+    public void shouldFindRidesByPassengerPageable(){
+        LocalDateTime startDate = LocalDateTime.of(2021,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByPassenger(passenger01ID, startDate, endDate, PageRequest.of(0, 5));
+        Assertions.assertEquals(3, rides.getTotalElements());
+        List<Integer> expectedIDs = List.of(1,2,3);
+        for(Ride ride : rides.getContent()){
+            Assertions.assertTrue(expectedIDs.stream().anyMatch(integer -> Objects.equals(ride.getId(), integer)));
+        }
+    }
+    @Test
+    @DisplayName("Get ride pages for passenger returns multiple pages")
+    @Order(201)
+    public void shouldReturn2Pages(){
+        LocalDateTime startDate = LocalDateTime.of(2021,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByPassenger(passenger01ID, startDate, endDate, PageRequest.of(0, 2));
+        Assertions.assertEquals(2, rides.getTotalPages());
+        Assertions.assertEquals(2, rides.getSize());
+    }
 
+    @Test
+    @DisplayName("Get ride pages for passenger returns no rides if no rides are in time range")
+    @Order(202)
+    public void shouldReturnNoRidesPageable(){
+        LocalDateTime startDate = LocalDateTime.of(2019,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2020, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByPassenger(passenger01ID, startDate, endDate, PageRequest.of(0, 5));
+        Assertions.assertEquals(0, rides.getTotalElements());
+        Assertions.assertEquals(0, rides.getTotalPages());
+    }
+
+    @Test
+    @DisplayName("Get ride pages for passenger returns no rides if passenger id does not exist")
+    @Order(203)
+    public void shouldReturnNoRidesForInvalidPassengerIDPageable(){
+        LocalDateTime startDate = LocalDateTime.of(2019,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2024, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByPassenger(99999, startDate, endDate, PageRequest.of(0, 5));
+        Assertions.assertEquals(0, rides.getTotalElements());
+        Assertions.assertEquals(0, rides.getTotalPages());
+    }
+
+    @Test
+    @DisplayName("Get rides for passenger returns all passenger rides")
+    @Order(210)
+    public void shouldFindRidesByPassenger(){
+        LocalDateTime startDate = LocalDateTime.of(2021,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1,1,0,0);
+        List<Ride> rides = rideRepository.findRidesByPassenger(passenger01ID, startDate, endDate);
+        Assertions.assertEquals(3, rides.size());
+        List<Integer> expectedIDs = List.of(1,2,3);
+        for(Ride ride : rides){
+            Assertions.assertTrue(expectedIDs.stream().anyMatch(integer -> Objects.equals(ride.getId(), integer)));
+        }
+    }
+
+    @Test
+    @DisplayName("Get rides for passenger returns subset of passenger rides for given time frame")
+    @Order(211)
+    public void shouldReturnSubsetOfRides(){
+        LocalDateTime startDate = LocalDateTime.of(2021,12,4,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2022, 2,7,0,0);
+        List<Ride> rides = rideRepository.findRidesByPassenger(passenger01ID, startDate, endDate);
+        Assertions.assertEquals(1, rides.size());
+    }
+
+    @Test
+    @DisplayName("Get rides for passenger returns no rides if no rides are in time range")
+    @Order(212)
+    public void shouldReturnNoRides(){
+        LocalDateTime startDate = LocalDateTime.of(2019,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2020, 1,1,0,0);
+        List<Ride> rides = rideRepository.findRidesByPassenger(passenger01ID, startDate, endDate);
+        Assertions.assertEquals(0, rides.size());
+    }
+
+    @Test
+    @DisplayName("Get rides for passenger returns no rides if passenger id does not exist")
+    @Order(213)
+    public void shouldReturnNoRidesForInvalidPassengerID(){
+        LocalDateTime startDate = LocalDateTime.of(2019,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2024, 1,1,0,0);
+        List<Ride> rides = rideRepository.findRidesByPassenger(99999, startDate, endDate);
+        Assertions.assertEquals(0, rides.size());
+    }
+
+    @Test
+    @DisplayName("Get ride pages for user returns all user rides")
+    @Order(220)
+    public void shouldFindRidesByUserPageable(){
+        LocalDateTime startDate = LocalDateTime.of(2021,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByUser(passenger01ID, startDate, endDate, PageRequest.of(0, 5));
+        Assertions.assertEquals(3, rides.getTotalElements());
+        List<Integer> expectedIDs = List.of(1,2,3);
+        for(Ride ride : rides.getContent()){
+            Assertions.assertTrue(expectedIDs.stream().anyMatch(integer -> Objects.equals(ride.getId(), integer)));
+        }
+    }
+    @Test
+    @DisplayName("Get ride pages for user returns multiple pages")
+    @Order(221)
+    public void shouldReturnPagesForUser(){
+        LocalDateTime startDate = LocalDateTime.of(2021,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByUser(passenger01ID, startDate, endDate, PageRequest.of(0, 2));
+        Assertions.assertEquals(2, rides.getTotalPages());
+        Assertions.assertEquals(2, rides.getSize());
+    }
+
+    @Test
+    @DisplayName("Get ride pages for user returns no rides if no rides are in time range")
+    @Order(222)
+    public void shouldReturnNoRidesPageableUser(){
+        LocalDateTime startDate = LocalDateTime.of(2019,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2020, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByUser(passenger01ID, startDate, endDate, PageRequest.of(0, 5));
+        Assertions.assertEquals(0, rides.getTotalElements());
+        Assertions.assertEquals(0, rides.getTotalPages());
+    }
+
+    @Test
+    @DisplayName("Get ride pages for user returns no rides if user id does not exist")
+    @Order(223)
+    public void shouldReturnNoRidesForInvalidUserIDPageable(){
+        LocalDateTime startDate = LocalDateTime.of(2019,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2024, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByUser(99999, startDate, endDate, PageRequest.of(0, 5));
+        Assertions.assertEquals(0, rides.getTotalElements());
+        Assertions.assertEquals(0, rides.getTotalPages());
+    }
+
+    @Test
+    @DisplayName("Get ride pages for driver returns all driver rides")
+    @Order(230)
+    public void shouldFindRidesByDriverPageable(){
+        LocalDateTime startDate = LocalDateTime.of(2021,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByDriverAndStartTimeAndEndTimePageable(driver01ID,PageRequest.of(0, 5) ,startDate, endDate);
+        Assertions.assertEquals(2, rides.getTotalElements());
+        List<Integer> expectedIDs = List.of(6,7);
+        for(Ride ride : rides.getContent()){
+            Assertions.assertTrue(expectedIDs.stream().anyMatch(integer -> Objects.equals(ride.getId(), integer)));
+        }
+    }
+    @Test
+    @DisplayName("Get ride pages for passenger returns multiple pages")
+    @Order(231)
+    public void shouldReturnPagesForDriver(){
+        LocalDateTime startDate = LocalDateTime.of(2021,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2023, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByDriverAndStartTimeAndEndTimePageable(driver01ID, PageRequest.of(0, 1), startDate, endDate);
+        Assertions.assertEquals(2, rides.getTotalPages());
+        Assertions.assertEquals(1, rides.getSize());
+    }
+
+    @Test
+    @DisplayName("Get ride pages for user returns no rides if no rides are in time range")
+    @Order(232)
+    public void shouldReturnNoRidesPageableDriver(){
+        LocalDateTime startDate = LocalDateTime.of(2019,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2020, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByDriverAndStartTimeAndEndTimePageable(driver01ID, PageRequest.of(0, 5), startDate, endDate);
+        Assertions.assertEquals(0, rides.getTotalElements());
+        Assertions.assertEquals(0, rides.getTotalPages());
+    }
+
+    @Test
+    @DisplayName("Get ride pages for driver returns no rides if driver id does not exist")
+    @Order(233)
+    public void shouldReturnNoRidesForInvalidDriverIDPageable(){
+        LocalDateTime startDate = LocalDateTime.of(2019,12,31,0,0);
+        LocalDateTime endDate = LocalDateTime.of(2024, 1,1,0,0);
+        Page<Ride> rides = rideRepository.findRidesByDriverAndStartTimeAndEndTimePageable(99999,PageRequest.of(0, 5), startDate, endDate);
+        Assertions.assertEquals(0, rides.getTotalElements());
+        Assertions.assertEquals(0, rides.getTotalPages());
+    }
 
 }
