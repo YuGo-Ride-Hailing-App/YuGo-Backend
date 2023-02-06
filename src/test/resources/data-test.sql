@@ -16,6 +16,10 @@ INSERT INTO USERS (name, surname, profile_picture, telephone_number, email, addr
 VALUES ('Perislav', 'Perić', '1808251220.jpg', '+12312321314', 'perislav.peric@email.com', 'Bulevar Oslobodjenja 74', '$2a$12$T1i/9on6Eq.PW6FlDo1HUOqV9GNmJ1Sp24LbE0J5OrLg.f06BcapG', false, true, true, 'DRIVER');
 INSERT INTO USERS (name, surname, profile_picture, telephone_number, email, address, password, is_blocked, is_active, is_online, user_type)
 VALUES ('Nikola', 'Nikolic', 'DEFAULT.jpg', '+12312321314', 'nikola.nikolic@email.com', 'Bulevar Oslobodjenja 74', '$2a$12$T1i/9on6Eq.PW6FlDo1HUOqV9GNmJ1Sp24LbE0J5OrLg.f06BcapG', false, true, true, 'DRIVER');
+INSERT INTO USERS (name, surname, profile_picture, telephone_number, email, address, password, is_blocked, is_active, is_online, user_type)
+VALUES ('Velibor', 'Stojkovic', 'DEFAULT.jpg', '+12312321314', 'velibor.stojkovic@email.com', 'Bulevar Oslobodjenja 74', '$2a$12$T1i/9on6Eq.PW6FlDo1HUOqV9GNmJ1Sp24LbE0J5OrLg.f06BcapG', false, true, true, 'DRIVER');
+INSERT INTO USERS (name, surname, profile_picture, telephone_number, email, address, password, is_blocked, is_active, is_online, user_type)
+VALUES ('Nikola', 'Petrovic', 'DEFAULT.jpg', '+12312321314', 'nikola.petrovic@email.com', 'Bulevar Oslobodjenja 74', '$2a$12$T1i/9on6Eq.PW6FlDo1HUOqV9GNmJ1Sp24LbE0J5OrLg.f06BcapG', false, true, true, 'DRIVER');
 
 INSERT INTO USER_ROLE (user_id, role_id) VALUES (2, 1);
 INSERT INTO USER_ROLE (user_id, role_id) VALUES (1, 2);
@@ -24,6 +28,9 @@ INSERT INTO USER_ROLE (user_id, role_id) VALUES (4, 2);
 INSERT INTO USER_ROLE (user_id, role_id) VALUES (5, 2);
 INSERT INTO USER_ROLE (user_id, role_id) VALUES (6, 3);
 INSERT INTO USER_ROLE (user_id, role_id) VALUES (7, 3);
+
+INSERT INTO USER_ROLE (user_id, role_id) VALUES (8, 3);
+INSERT INTO USER_ROLE (user_id, role_id) VALUES (9, 3);
 
 INSERT INTO Vehicles(are_babies_allowed,are_pets_allowed,licence_plate_number,model,number_of_seats,vehicle_type,driver_id)
 VALUES ('1','0','SM074HZ','Skoda Octavia','5','1','6');
@@ -56,10 +63,15 @@ VALUES ('1','2022-12-06 23:35:33.172279','15','0','1','2022-12-06 23:35:33.17227
 INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
 VALUES ('1','2022-12-06 23:35:33.172279','15','0','1','2022-12-06 23:35:33.172279','PENDING','13.0','6',null,'1');
 
+INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
+VALUES ('1',null,'15','0','1','2022-12-06 23:35:33.172279','ACTIVE','13.0','8',null,'1');
+INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
+VALUES ('1',null,'15','0','1','2022-12-06 23:35:33.172279','PENDING','13.0','9',null,'1');
+
 INSERT INTO PATHS (starting_point, destination) VALUES (1, 2);
 INSERT INTO RIDES_LOCATIONS (ride_id, locations_id) VALUES  (1, 1);
 INSERT INTO PASSENGER_RIDES (passenger_id,ride_id) VALUES (3, 1);
 INSERT INTO PASSENGER_RIDES (passenger_id,ride_id) VALUES (3, 2);
 
-INSERT INTO FAVORITE_PATHS(favorite_name,includes_babies,includes_pets,vehicle_type_id,owner) VALUES ('Focus Shisha Bar',true,true,1,1);
-INSERT INTO PASSENGER_FAVORITE_PATHS(favorite_path_id,passenger_id) VALUES ('1','1');
+-- INSERT INTO FAVORITE_PATHS(favorite_name,includes_babies,includes_pets,vehicle_type_id,owner) VALUES ('Focus Shisha Bar',true,true,1,1);
+-- INSERT INTO PASSENGER_FAVORITE_PATHS(favorite_path_id,passenger_id) VALUES ('1','1');

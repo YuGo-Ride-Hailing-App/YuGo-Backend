@@ -9,10 +9,9 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.yugo.backend.YuGo.dto.*;
+import org.yugo.backend.YuGo.model.RideStatus;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -30,7 +29,11 @@ public class RideControllerIntegrationTest {
     private String passengerToken2;
     private String driverToken;
     private String driverToken2;
-
+    private final Integer passengerID = 1;
+    private String driver200Token;
+    Integer driver200ID = 8;
+    private String driver201Token;
+    Integer driver201ID = 9;
     @BeforeAll
     public void setup() {
         HttpHeaders headers = new HttpHeaders();
@@ -56,6 +59,14 @@ public class RideControllerIntegrationTest {
         HttpEntity<Login> driverRequest2 = new HttpEntity<>(new Login("nikola.nikolic@email.com", "Password123"), headers);
         ResponseEntity<TokenStateOut> driverResult2 = this.restTemplate.postForEntity("/api/user/login", driverRequest2, TokenStateOut.class);
         driverToken2= driverResult2.getBody().getAccessToken();
+
+        HttpEntity<Login> driver200TokenRequest = new HttpEntity<>(new Login("velibor.stojkovic@email.com", "Password123"), headers);
+        ResponseEntity<TokenStateOut> driver200TokenResult = this.restTemplate.postForEntity("/api/user/login", driver200TokenRequest, TokenStateOut.class);
+        driver200Token = driver200TokenResult.getBody().getAccessToken();
+
+        HttpEntity<Login> driver201TokenRequest = new HttpEntity<>(new Login("velibor.stojkovic@email.com", "Password123"), headers);
+        ResponseEntity<TokenStateOut> driver201TokenResult = this.restTemplate.postForEntity("/api/user/login", driver201TokenRequest, TokenStateOut.class);
+        driver201Token = driver201TokenResult.getBody().getAccessToken();
 
     }
 
@@ -859,8 +870,629 @@ public class RideControllerIntegrationTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    private RideDetailedOut driver200Ride;
+    private final Integer driver201RideID = 3;
     @Test
-    @Order(52)
+    @DisplayName("Driver can end ride if ride status is FINISHED")
+    @Order(200)
+    @Tag("vlada")
+    public void shouldEndRideForExistingRide(){
+        ResponseEntity<RideDetailedOut> activeRideRequest = restTemplate.getForEntity("/api/ride/driver/" + driver200ID + "/active", RideDetailedOut.class);
+        RideDetailedOut activeRide = activeRideRequest.getBody();
+        if(activeRide == null){
+            fail("This test requires active ride to run properly");
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driver200Token);
+        HttpEntity<RideIn> endRideRequest = new HttpEntity<>(null, headers);
+
+        ResponseEntity<RideDetailedOut> endRideResponse = restTemplate.exchange("/api/ride/" + activeRide.getId() + "/end", HttpMethod.PUT, endRideRequest, RideDetailedOut.class);
+        RideDetailedOut responseRide = endRideResponse.getBody();
+        driver200Ride = responseRide;
+
+        if(responseRide == null){
+            fail();
+        }
+        assertEquals(HttpStatus.OK, endRideResponse.getStatusCode());
+        assertEquals(activeRide.getId(), responseRide.getId());
+        assertEquals(RideStatus.FINISHED.toString(), responseRide.getStatus());
+    }
+    @Test
+    @DisplayName("End ride returns bad request when ending ride that is not in status FINISHED")
+    @Order(201)
+    @Tag("vlada")
+    public void shouldReturnBadRequestForFinishedRide(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driver200Token);
+        HttpEntity<RideIn> endRideRequest = new HttpEntity<>(null, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", driver200Ride.getId());
+        ResponseEntity<RideDetailedOut> endRideResponse = restTemplate.exchange("/api/ride/{id}/end", HttpMethod.PUT, endRideRequest, RideDetailedOut.class, params);
+
+        assertEquals(HttpStatus.BAD_REQUEST, endRideResponse.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("End ride returns not found when ride does not exist")
+    @Order(202)
+    @Tag("vlada")
+    public void shouldReturnNotFoundForNonexistentRide(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driver200Token);
+        HttpEntity<RideIn> endRideRequest = new HttpEntity<>(null, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", 99999999);
+        ResponseEntity<String> endRideResponse = restTemplate.exchange("/api/ride/{id}/end", HttpMethod.PUT, endRideRequest, String.class, params);
+
+        assertEquals(HttpStatus.NOT_FOUND, endRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(203)
+    @DisplayName("End ride returns unauthorized if sender is unauthorized")
+    @Tag("vlada")
+    public void endRideShouldReturnUnauthorizedIfSenderIsUnauthorized(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<RideIn> endRideRequest = new HttpEntity<>(null, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", 99999);
+        ResponseEntity<String> endRideResponse = restTemplate.exchange("/api/ride/{id}/end", HttpMethod.PUT, endRideRequest, String.class, params);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, endRideResponse.getStatusCode());
+    }
+    @Test
+    @Order(204)
+    @DisplayName("End ride returns forbidden if sender is not a driver")
+    @Tag("vlada")
+    public void endRideShouldReturnForbiddenIfSenderIsNotDriver(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+        HttpEntity<RideIn> endRideRequest = new HttpEntity<>(null, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", 99999);
+        ResponseEntity<String> endRideResponse = restTemplate.exchange("/api/ride/{id}/end", HttpMethod.PUT, endRideRequest, String.class, params);
+
+        assertEquals(HttpStatus.FORBIDDEN, endRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(210)
+    @DisplayName("Driver can cancel the ride if ride status is PENDING")
+    @Tag("vlada")
+    public void shouldCancelRideThatHasStatusPending(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driver201Token);
+
+        ReasonIn reason = new ReasonIn();
+        reason.setReason("Default message");
+
+        HttpEntity<ReasonIn> cancelRideRequest = new HttpEntity<>(reason, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", driver201RideID);
+        ResponseEntity<RideDetailedOut> cancelRideResponse = restTemplate.exchange("/api/ride/{id}/cancel", HttpMethod.PUT, cancelRideRequest, RideDetailedOut.class, params);
+        RideDetailedOut responseRide = cancelRideResponse.getBody();
+
+        if(responseRide == null){
+            fail();
+        }
+        assertEquals(HttpStatus.OK, cancelRideResponse.getStatusCode());
+        assertEquals(driver201RideID, responseRide.getId());
+        assertEquals(RideStatus.REJECTED.toString(), responseRide.getStatus());
+    }
+
+    @Test
+    @Order(211)
+    @DisplayName("Cancel ride returns bad request if ride status is not PENDING")
+    @Tag("vlada")
+    public void cancelRideShouldReturnBadRequestIfRideStatusIsNotPending(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driver201Token);
+
+        ReasonIn reason = new ReasonIn();
+        reason.setReason("Default message");
+
+        HttpEntity<ReasonIn> cancelRideRequest = new HttpEntity<>(reason, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", driver201RideID);
+        ResponseEntity<String> cancelRideResponse = restTemplate.exchange("/api/ride/{id}/cancel", HttpMethod.PUT, cancelRideRequest, String.class, params);
+
+        assertEquals(HttpStatus.BAD_REQUEST, cancelRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(212)
+    @DisplayName("Cancel ride returns not found if ride does not exist")
+    @Tag("vlada")
+    public void cancelRideShouldReturnNotFoundtIfRideDoesNotExist(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driver201Token);
+
+        ReasonIn reason = new ReasonIn();
+        reason.setReason("Default message");
+
+        HttpEntity<ReasonIn> cancelRideRequest = new HttpEntity<>(reason, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", 9999999);
+        ResponseEntity<String> cancelRideResponse = restTemplate.exchange("/api/ride/{id}/cancel", HttpMethod.PUT, cancelRideRequest, String.class, params);
+
+        assertEquals(HttpStatus.NOT_FOUND, cancelRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(213)
+    @DisplayName("Cancel ride returns unauthorized if sender is unauthorized")
+    @Tag("vlada")
+    public void cancelRideShouldReturnUnauthorizedIfSenderIsUnauthorized(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ReasonIn reason = new ReasonIn();
+        reason.setReason("Default message");
+
+        HttpEntity<ReasonIn> cancelRideRequest = new HttpEntity<>(reason, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", 9999999);
+        ResponseEntity<String> cancelRideResponse = restTemplate.exchange("/api/ride/{id}/cancel", HttpMethod.PUT, cancelRideRequest, String.class, params);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, cancelRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(214)
+    @DisplayName("Cancel ride returns forbidden if sender is not a driver")
+    @Tag("vlada")
+    public void cancelRideShouldReturnForbiddenIfSenderIsNotDriver(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        ReasonIn reason = new ReasonIn();
+        reason.setReason("Default message");
+
+        HttpEntity<ReasonIn> cancelRideRequest = new HttpEntity<>(reason, headers);
+
+        Map<String, Integer> params = new HashMap<>();
+        params.put("id", 9999999);
+        ResponseEntity<String> cancelRideResponse = restTemplate.exchange("/api/ride/{id}/cancel", HttpMethod.PUT, cancelRideRequest, String.class, params);
+
+        assertEquals(HttpStatus.FORBIDDEN, cancelRideResponse.getStatusCode());
+    }
+
+    private final List<FavoritePathOut> passengerFavoritePaths = new ArrayList<>();
+    @Test
+    @Order(220)
+    @DisplayName("Creating favorite ride returns favorite ride")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsFavoriteRide(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        LocationInOut departure = new LocationInOut();
+        departure.setLatitude(45);
+        departure.setLongitude(45);
+        departure.setAddress("Default address");
+        LocationInOut destination = new LocationInOut();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        destination.setAddress("Default address");
+
+
+        PathInOut path = new PathInOut();
+        path.setDestination(destination);
+        path.setDeparture(departure);
+        List<PathInOut> paths = List.of(path);
+
+        UserSimplifiedOut passenger = new UserSimplifiedOut();
+        passenger.setId(passengerID);
+        passenger.setEmail("pera.peric@email.com");
+
+        FavoritePathIn favoritePath = new FavoritePathIn();
+        favoritePath.setFavoriteName("Default name");
+        favoritePath.setBabyTransport(true);
+        favoritePath.setPetTransport(false);
+        favoritePath.setVehicleType("STANDARD");
+        favoritePath.setLocations(paths);
+        favoritePath.setPassengers(List.of(passenger));
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+
+        ResponseEntity<FavoritePathOut> createFavRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, FavoritePathOut.class);
+        FavoritePathOut favoritePathResponse = createFavRideResponse.getBody();
+
+        if(favoritePathResponse == null){
+            fail();
+        }
+        passengerFavoritePaths.add(favoritePathResponse);
+        assertEquals(HttpStatus.OK, createFavRideResponse.getStatusCode());
+        assertNotNull(favoritePathResponse.getId());
+        assertEquals(favoritePath.getFavoriteName(), favoritePathResponse.getFavoriteName());
+        assertEquals(favoritePath.getBabyTransport(), favoritePathResponse.getBabyTransport());
+        assertEquals(favoritePath.getPetTransport(), favoritePathResponse.getPetTransport());
+    }
+    @Test
+    @Order(221)
+    @DisplayName("Creating favorite ride returns bad request if favorite ride name is longer than 50 characters")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsBadRequestIfNameIsLongerThan50Chars(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        LocationInOut departure = new LocationInOut();
+        departure.setLatitude(45);
+        departure.setLongitude(45);
+        departure.setAddress("Default address");
+        LocationInOut destination = new LocationInOut();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        destination.setAddress("Default address");
+
+
+        PathInOut path = new PathInOut();
+        path.setDestination(destination);
+        path.setDeparture(departure);
+        List<PathInOut> paths = List.of(path);
+
+        UserSimplifiedOut passenger = new UserSimplifiedOut();
+        passenger.setId(passengerID);
+        passenger.setEmail("pera.peric@email.com");
+
+        FavoritePathIn favoritePath = new FavoritePathIn();
+        favoritePath.setFavoriteName("Default naaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaame");
+        favoritePath.setBabyTransport(true);
+        favoritePath.setPetTransport(false);
+        favoritePath.setVehicleType("STANDARD");
+        favoritePath.setLocations(paths);
+        favoritePath.setPassengers(List.of(passenger));
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+
+        ResponseEntity<String> createFavRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, String.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, createFavRideResponse.getStatusCode());
+    }
+    @Test
+    @Order(222)
+    @DisplayName("Creating favorite ride returns bad request if locations are null")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsBadRequestIfLocationsAreNull(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        UserSimplifiedOut passenger = new UserSimplifiedOut();
+        passenger.setId(passengerID);
+        passenger.setEmail("pera.peric@email.com");
+
+        FavoritePathIn favoritePath = new FavoritePathIn();
+        favoritePath.setFavoriteName("Default name");
+        favoritePath.setBabyTransport(true);
+        favoritePath.setPetTransport(false);
+        favoritePath.setVehicleType("STANDARD");
+        favoritePath.setLocations(null);
+        favoritePath.setPassengers(List.of(passenger));
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+
+        ResponseEntity<String> createFavRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, String.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, createFavRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(223)
+    @DisplayName("Creating favorite ride returns bad request if passengers are null")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsBadRequestIfPassengersAreNull(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        LocationInOut departure = new LocationInOut();
+        departure.setLatitude(45);
+        departure.setLongitude(45);
+        departure.setAddress("Default address");
+        LocationInOut destination = new LocationInOut();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        destination.setAddress("Default address");
+
+
+        PathInOut path = new PathInOut();
+        path.setDestination(destination);
+        path.setDeparture(departure);
+        List<PathInOut> paths = List.of(path);
+
+        FavoritePathIn favoritePath = new FavoritePathIn();
+        favoritePath.setFavoriteName("Default name");
+        favoritePath.setBabyTransport(true);
+        favoritePath.setPetTransport(false);
+        favoritePath.setVehicleType("STANDARD");
+        favoritePath.setLocations(paths);
+        favoritePath.setPassengers(null);
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+
+        ResponseEntity<String> createFavRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, String.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, createFavRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(224)
+    @DisplayName("Creating favorite ride returns bad request if vehicle type is null")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsBadRequestIfVehicleTypeIsNull(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        LocationInOut departure = new LocationInOut();
+        departure.setLatitude(45);
+        departure.setLongitude(45);
+        departure.setAddress("Default address");
+        LocationInOut destination = new LocationInOut();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        destination.setAddress("Default address");
+
+
+        PathInOut path = new PathInOut();
+        path.setDestination(destination);
+        path.setDeparture(departure);
+        List<PathInOut> paths = List.of(path);
+
+        UserSimplifiedOut passenger = new UserSimplifiedOut();
+        passenger.setId(passengerID);
+        passenger.setEmail("pera.peric@email.com");
+
+        FavoritePathIn favoritePath = new FavoritePathIn();
+        favoritePath.setFavoriteName("Default name");
+        favoritePath.setBabyTransport(true);
+        favoritePath.setPetTransport(false);
+        favoritePath.setVehicleType(null);
+        favoritePath.setLocations(paths);
+        favoritePath.setPassengers(List.of(passenger));
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+
+        ResponseEntity<String> createFavRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, String.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, createFavRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(225)
+    @DisplayName("Creating favorite ride returns bad request if vehicle contains more than 30 characters")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsBadRequestIfVehicleTypeContainsMoreThan30Chars(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        LocationInOut departure = new LocationInOut();
+        departure.setLatitude(45);
+        departure.setLongitude(45);
+        departure.setAddress("Default address");
+        LocationInOut destination = new LocationInOut();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        destination.setAddress("Default address");
+
+
+        PathInOut path = new PathInOut();
+        path.setDestination(destination);
+        path.setDeparture(departure);
+        List<PathInOut> paths = List.of(path);
+
+        UserSimplifiedOut passenger = new UserSimplifiedOut();
+        passenger.setId(passengerID);
+        passenger.setEmail("pera.peric@email.com");
+
+        FavoritePathIn favoritePath = new FavoritePathIn();
+        favoritePath.setFavoriteName("Default name");
+        favoritePath.setBabyTransport(true);
+        favoritePath.setPetTransport(false);
+        favoritePath.setVehicleType("STAAAAAAAAAAAAAAAAAAAAAAAAAAANDARD");
+        favoritePath.setLocations(paths);
+        favoritePath.setPassengers(List.of(passenger));
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+
+        ResponseEntity<String> createFavRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, String.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, createFavRideResponse.getStatusCode());
+    }
+    private void createFavoriteRides(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+        for(int i = 0; i < 10; i++){
+            LocationInOut departure = new LocationInOut();
+            departure.setLatitude(45);
+            departure.setLongitude(45);
+            departure.setAddress("Default address");
+            LocationInOut destination = new LocationInOut();
+            destination.setLatitude(46);
+            destination.setLongitude(46);
+            destination.setAddress("Default address");
+
+            PathInOut path = new PathInOut();
+            path.setDestination(destination);
+            path.setDeparture(departure);
+            List<PathInOut> paths = List.of(path);
+
+            UserSimplifiedOut passenger = new UserSimplifiedOut();
+            passenger.setId(passengerID);
+            passenger.setEmail("pera.peric@email.com");
+
+            FavoritePathIn favoritePath = new FavoritePathIn();
+            favoritePath.setFavoriteName("Default name");
+            favoritePath.setBabyTransport(true);
+            favoritePath.setPetTransport(false);
+            favoritePath.setVehicleType("STANDARD");
+            favoritePath.setLocations(paths);
+            favoritePath.setPassengers(List.of(passenger));
+
+            HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+            ResponseEntity<FavoritePathOut> createFavRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, FavoritePathOut.class);
+            FavoritePathOut favoritePathResponse = createFavRideResponse.getBody();
+            passengerFavoritePaths.add(favoritePathResponse);
+        }
+
+    }
+    @Test
+    @Order(226)
+    @DisplayName("Creating favorite ride returns bad request if there are 10 or more rides")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsBadRequestIfThereTenOrMoreRides(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        createFavoriteRides();
+
+        LocationInOut departure = new LocationInOut();
+        departure.setLatitude(45);
+        departure.setLongitude(45);
+        departure.setAddress("Default address");
+        LocationInOut destination = new LocationInOut();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        destination.setAddress("Default address");
+
+
+        PathInOut path = new PathInOut();
+        path.setDestination(destination);
+        path.setDeparture(departure);
+        List<PathInOut> paths = List.of(path);
+
+        UserSimplifiedOut passenger = new UserSimplifiedOut();
+        passenger.setId(passengerID);
+        passenger.setEmail("pera.peric@email.com");
+
+        FavoritePathIn favoritePath = new FavoritePathIn();
+        favoritePath.setFavoriteName("Default name");
+        favoritePath.setBabyTransport(true);
+        favoritePath.setPetTransport(false);
+        favoritePath.setVehicleType("STANDARD");
+        favoritePath.setLocations(paths);
+        favoritePath.setPassengers(List.of(passenger));
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+        ResponseEntity<FavoritePathOut> favoriteRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, FavoritePathOut.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, favoriteRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(227)
+    @DisplayName("Create favorite ride returns unauthorized if sender is unauthorized")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsUnauthorizedIfSenderIsUnauthorized(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(null, headers);
+
+        ResponseEntity<String> favoriteRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, String.class);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, favoriteRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(228)
+    @DisplayName("Create favorite ride returns forbidden if sender is not PASSENGER or ADMIN")
+    @Tag("vlada")
+    public void createFavoriteRideReturnsForbiddenIfSenderIsNotPassengerOrAdmin(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driver201Token);
+
+        LocationInOut departure = new LocationInOut();
+        departure.setLatitude(45);
+        departure.setLongitude(45);
+        departure.setAddress("Default address");
+        LocationInOut destination = new LocationInOut();
+        destination.setLatitude(46);
+        destination.setLongitude(46);
+        destination.setAddress("Default address");
+
+
+        PathInOut path = new PathInOut();
+        path.setDestination(destination);
+        path.setDeparture(departure);
+        List<PathInOut> paths = List.of(path);
+
+        UserSimplifiedOut passenger = new UserSimplifiedOut();
+        passenger.setId(passengerID);
+        passenger.setEmail("pera.peric@email.com");
+
+        FavoritePathIn favoritePath = new FavoritePathIn();
+        favoritePath.setFavoriteName("Default name");
+        favoritePath.setBabyTransport(true);
+        favoritePath.setPetTransport(false);
+        favoritePath.setVehicleType("STANDARD");
+        favoritePath.setLocations(paths);
+        favoritePath.setPassengers(List.of(passenger));
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(favoritePath, headers);
+
+        ResponseEntity<String> cancelRideResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.POST, createFavoriteRideRequest, String.class);
+
+        assertEquals(HttpStatus.FORBIDDEN, cancelRideResponse.getStatusCode());
+    }
+
+    @Test
+    @Order(230)
+    @DisplayName("Get favorite locations returns list of favorite locations")
+    @Tag("vlada")
+    public void getFavoriteLocationsReturnsListOfFavoriteLocations(){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        HttpEntity<FavoritePathIn> createFavoriteRideRequest = new HttpEntity<>(null, headers);
+
+        ResponseEntity<FavoritePathOut[]> favoritePathResponse = restTemplate.exchange("/api/ride/favorites", HttpMethod.GET, createFavoriteRideRequest, FavoritePathOut[].class);
+        FavoritePathOut[] favoritePaths = favoritePathResponse.getBody();
+        if(favoritePaths == null){
+            fail();
+        }
+        assertEquals(passengerFavoritePaths.size(), favoritePaths.length);
+        for(FavoritePathOut favoritePath : favoritePaths){
+            assertTrue(passengerFavoritePaths.stream().anyMatch(favoritePathOut -> Objects.equals(favoritePathOut.getId(), favoritePath.getId())));
+        }
+    }
+
+    @Test
+    @Order(300)
     @DisplayName("Shouldnt delete favorite path  when making delete request to endpoint - /api/ride/{id}/favorite")
     public void ShouldDeleteFavorite() {
         HttpHeaders headers = new HttpHeaders();
