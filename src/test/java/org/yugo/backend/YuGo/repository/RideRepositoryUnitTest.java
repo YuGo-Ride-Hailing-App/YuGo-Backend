@@ -24,4 +24,6 @@ public class RideRepositoryUnitTest {
     @Autowired
     private RideRepository rideRepository;
 
+    @Test
+    public void shouldFindPassenger
 }
