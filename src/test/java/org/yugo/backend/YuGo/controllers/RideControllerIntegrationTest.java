@@ -1505,4 +1505,130 @@ public class RideControllerIntegrationTest {
 
         assertEquals(HttpStatus.NO_CONTENT, responseEntity.getStatusCode());
     }
+
+    @Test
+    @Order(301)
+    @DisplayName("Should return unauthorized when making POST request to endpoint - /api/ride/vehicle-arrived/{id}")
+    public void ShouldReturnUnauthorizedForNotifyingPassenger() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer ");
+
+        HttpEntity<Object> request = new HttpEntity<>(null, headers);
+        ResponseEntity<?> responseEntity = restTemplate.postForEntity("/api/ride/vehicle-arrived/1", request, String.class);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, responseEntity.getStatusCode());
+    }
+
+    @Test
+    @Order(302)
+    @DisplayName("Should return unauthorized when making GET request to endpoint - /api/ride/passenger/{id}/unresolved")
+    public void ShouldReturnUnauthorizedForGetUnresolvedRide() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer ");
+
+        ResponseEntity<?> responseEntity = restTemplate.exchange("/api/ride/passenger/1/unresolved",
+                HttpMethod.GET, new HttpEntity<>(headers), String.class);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, responseEntity.getStatusCode());
+    }
+
+    @Test
+    @Order(303)
+    @DisplayName("Should return forbidden when making POST request to endpoint - /api/ride/vehicle-arrived/{id}")
+    public void ShouldReturnForbiddenForNotifyingPassenger() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + adminToken);
+
+        ResponseEntity<?> responseEntity = restTemplate.postForEntity("/api/ride/vehicle-arrived/1", new HttpEntity<>(null, headers), String.class);
+
+        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+    @Test
+    @Order(304)
+    @DisplayName("Should return forbidden when making GET request to endpoint - /api/ride/passenger/{id}/unresolved")
+    public void ShouldReturnForbiddenForGetUnresolvedRide() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driverToken);
+
+        ResponseEntity<?> responseEntity = restTemplate.exchange("/api/ride/passenger/1/unresolved",
+                HttpMethod.GET, new HttpEntity<>(headers), String.class);
+
+        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+    @Test
+    @Order(305)
+    @DisplayName("Should return bad request because of bad params when making POST request to endpoint - /api/ride/vehicle-arrived/{id}")
+    public void ShouldReturnBadRequestForNotifyingPassenger() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driverToken);
+
+        ResponseEntity<?> responseEntity = restTemplate.exchange("/api/ride/vehicle-arrived/asd",
+                HttpMethod.POST, new HttpEntity<>(headers), String.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    @Order(306)
+    @DisplayName("Should return bad request because of bad params when making GET request to endpoint - /api/ride/passenger/{id}/unresolved")
+    public void ShouldReturnBadRequestForGetUnresolvedRide() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        ResponseEntity<?> responseEntity = restTemplate.exchange("/api/ride/passenger/asd/unresolved",
+                HttpMethod.GET, new HttpEntity<>(headers), String.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    @Order(307)
+    @DisplayName("Should return no content when making POST request to endpoint - /api/ride/vehicle-arrived/{id}")
+    public void ShouldReturnNoContentForNotifyingPassenger() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + driverToken);
+
+        ResponseEntity<?> responseEntity = restTemplate.postForEntity("/api/ride/vehicle-arrived/1",
+                new HttpEntity<>(null, headers), String.class);
+
+        assertEquals(HttpStatus.NO_CONTENT, responseEntity.getStatusCode());
+    }
+
+    @Test
+    @Order(308)
+    @DisplayName("Should return unresolved ride when making GET request to endpoint - /api/ride/passenger/{id}/unresolved")
+    public void ShouldReturnUnresolvedRideForGetUnresolvedRide() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken2);
+
+        ResponseEntity<RideDetailedOut> responseEntity = restTemplate.exchange("/api/ride/passenger/1/unresolved",
+                HttpMethod.GET, new HttpEntity<>(headers), RideDetailedOut.class);
+
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    @Order(309)
+    @DisplayName("Should return not found when making GET request to endpoint - /api/ride/passenger/{id}/unresolved")
+    public void ShouldReturnNotFoundForGetUnresolvedRide() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + passengerToken);
+
+        ResponseEntity<?> responseEntity = restTemplate.exchange("/api/ride/passenger/4/unresolved",
+                HttpMethod.GET, new HttpEntity<>(headers), String.class);
+
+        assertEquals(HttpStatus.NOT_FOUND, responseEntity.getStatusCode());
+    }
 }
