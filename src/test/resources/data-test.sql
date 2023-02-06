@@ -23,6 +23,7 @@ INSERT INTO USER_ROLE (user_id, role_id) VALUES (3, 2);
 INSERT INTO USER_ROLE (user_id, role_id) VALUES (4, 2);
 INSERT INTO USER_ROLE (user_id, role_id) VALUES (5, 2);
 INSERT INTO USER_ROLE (user_id, role_id) VALUES (6, 3);
+INSERT INTO USER_ROLE (user_id, role_id) VALUES (7, 3);
 
 INSERT INTO Vehicles(are_babies_allowed,are_pets_allowed,licence_plate_number,model,number_of_seats,vehicle_type,driver_id)
 VALUES ('1','0','SM074HZ','Skoda Octavia','5','1','6');
@@ -48,6 +49,17 @@ UPDATE vehicles SET location_id=2 WHERE id=2;
 INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
 VALUES ('1','2022-12-06 23:35:33.172279','15','0','1','2022-12-06 23:35:33.172279','ACTIVE','13.0','7',null,'1');
 
+INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
+VALUES ('1','2022-12-06 23:35:33.172279','15','0','1','2022-12-06 23:35:33.172279','PENDING','13.0','7',null,'1');
+INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
+VALUES ('1','2022-12-06 23:35:33.172279','15','0','1','2022-12-06 23:35:33.172279','PENDING','13.0','7',null,'1');
+INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
+VALUES ('1','2022-12-06 23:35:33.172279','15','0','1','2022-12-06 23:35:33.172279','PENDING','13.0','6',null,'1');
+
 INSERT INTO PATHS (starting_point, destination) VALUES (1, 2);
 INSERT INTO RIDES_LOCATIONS (ride_id, locations_id) VALUES  (1, 1);
-INSERT INTO PASSENGER_RIDES (passenger_id, ride_id) VALUES (3, 1);
+INSERT INTO PASSENGER_RIDES (passenger_id,ride_id) VALUES (3, 1);
+INSERT INTO PASSENGER_RIDES (passenger_id,ride_id) VALUES (3, 2);
+
+INSERT INTO FAVORITE_PATHS(favorite_name,includes_babies,includes_pets,vehicle_type_id,owner) VALUES ('Focus Shisha Bar',true,true,1,1);
+INSERT INTO PASSENGER_FAVORITE_PATHS(favorite_path_id,passenger_id) VALUES ('1','1');
