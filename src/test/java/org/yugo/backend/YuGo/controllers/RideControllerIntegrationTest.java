@@ -17,8 +17,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(
-        locations = "classpath:application-test.properties")
-@ActiveProfiles("test")
+        locations = "classpath:application-controller-test.properties")
+@ActiveProfiles("controller_test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class RideControllerIntegrationTest {
@@ -33,7 +33,7 @@ public class RideControllerIntegrationTest {
     private String driver200Token;
     Integer driver200ID = 8;
     private String driver201Token;
-    Integer driver201ID = 9;
+
     @BeforeAll
     public void setup() {
         HttpHeaders headers = new HttpHeaders();
