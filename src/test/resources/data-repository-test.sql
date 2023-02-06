@@ -68,7 +68,7 @@ VALUES ('1',null,'15','0','1','2022-12-06 23:35:33.172279','ACTIVE','13.0','8',n
 INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
 VALUES ('1',null,'15','0','1','2022-12-06 23:35:33.172279','PENDING','13.0','9',null,'1');
 INSERT INTO RIDES (includes_babies,end_time,estimated_time,is_panic_pressed,includes_pets,start_time,status,price,driver_id,rejection_id,vehicle_type_id)
-VALUES ('1',null,'15','0','1','2022-12-06 23:35:33.172279','ACCEPTED','13.0','8',null,'1');
+VALUES ('1',null,'15','0','1','2023-12-06 23:35:33.172279','ACCEPTED','13.0','8',null,'1');
 
 
 INSERT INTO PATHS (starting_point, destination) VALUES (1, 2);

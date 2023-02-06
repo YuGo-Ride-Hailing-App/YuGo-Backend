@@ -26,6 +26,102 @@ public class RideRepositoryUnitTest {
     private RideRepository rideRepository;
 
     @Test
+    @Order(1)
+    @DisplayName("Should find next ride for driver")
+    public void shouldFindNextRideForDriver(){
+        Optional<Ride> ride = rideRepository.getNextRide(8);
+        assertThat(ride).isNotEmpty();
+    }
+
+    @Test
+    @Order(2)
+    @DisplayName("Should not find next ride for passenger")
+    public void shouldNotFindNextRideForPassenger(){
+        Optional<Ride> ride = rideRepository.getNextRide(1);
+        assertThat(ride).isEmpty();
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("Should not find next ride for driver")
+    public void shouldNotFindNextRideForDriver(){
+        Optional<Ride> ride = rideRepository.getNextRide(9);
+        assertThat(ride).isEmpty();
+    }
+
+    @Test
+    @Order(4)
+    @DisplayName("Should find active ride for driver for driver Id")
+    public void shouldFindActiveRideForDriverForDriverID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByDriver(7);
+        assertThat(ride).isNotEmpty();
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("Should not find active ride for driver for driver Id")
+    public void shouldNotFindActiveRideForDriverForDriverID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByDriver(9);
+        assertThat(ride).isEmpty();
+    }
+
+    @Test
+    @Order(6)
+    @DisplayName("Should not find active ride for driver for passenger Id")
+    public void shouldNotFindActiveRideForDriverForPassengerID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByDriver(1);
+        assertThat(ride).isEmpty();
+    }
+
+    @Test
+    @Order(7)
+    @DisplayName("Should find active ride for passenger for passenger Id")
+    public void shouldFindActiveRideForPassengerForPassengerID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByPassenger(3);
+        assertThat(ride).isNotEmpty();
+    }
+
+    @Test
+    @Order(8)
+    @DisplayName("Should not find active ride for passenger for passenger Id")
+    public void shouldNotFindActiveRideForPassengerForPassengerID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByPassenger(5);
+        assertThat(ride).isEmpty();
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("Should not find active ride for passenger for driver Id")
+    public void shouldNotFindActiveRideForPassengerForDriverID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByPassenger(7);
+        assertThat(ride).isEmpty();
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("Should find unresolved ride for passenger for passenger Id")
+    public void shouldFindUnresolvedRideForPassengerForPassengerID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByPassenger(3);
+        assertThat(ride).isNotEmpty();
+    }
+
+    @Test
+    @Order(11)
+    @DisplayName("Should not find unresolved ride for passenger for passenger Id")
+    public void shouldNotFindUnresolvedRideForPassengerForPassengerID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByPassenger(1);
+        assertThat(ride).isEmpty();
+    }
+
+    @Test
+    @Order(12)
+    @DisplayName("Should find unresolved ride for passenger for driver Id")
+    public void shouldNotFindUnresolvedRideForPassengerForDriverID(){
+        Optional<Ride> ride = rideRepository.findActiveRideByPassenger(7);
+        assertThat(ride).isEmpty();
+    }
+
+    @Test
     @Order(100)
     @DisplayName("Should get started ride by vehicle")
     public void shouldGetStartedRideByVehicle() {
