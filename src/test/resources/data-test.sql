@@ -50,4 +50,4 @@ VALUES ('1','2022-12-06 23:35:33.172279','15','0','1','2022-12-06 23:35:33.17227
 
 INSERT INTO PATHS (starting_point, destination) VALUES (1, 2);
 INSERT INTO RIDES_LOCATIONS (ride_id, locations_id) VALUES  (1, 1);
-INSERT INTO PASSENGER_RIDES (passenger_id,ride_id) VALUES (3, 1);
+INSERT INTO PASSENGER_RIDES (passenger_id, ride_id) VALUES (3, 1);
